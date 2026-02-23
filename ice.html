@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Icebreaking Assistance (v10)</title>
+  <style>
+    /* THEME PALETTES ------------------------------------------- */
+    /* WhatsApp-like LIGHT */
+    .theme-light {
+      --bg:#e5ddd5; --panel:#f0f0f0; --text:#111b21; --muted:#667781; --accent:#25D366; --accent-2:#128C7E;
+      --chip:#ffffff; --chip-border:#d1d7db; --bot:#ffffff; --user:#dcf8c6; --user-border:#cdeabc;
+    }
+    /* Dark (from earlier v2) */
+    .theme-dark {
+      --bg:#0f172a; --panel:#111827; --text:#e5e7eb; --muted:#94a3b8; --accent:#22c55e; --accent-2:#06b6d4;
+      --chip:#0b1220; --chip-border:#1f2937; --bot:#0b1220; --user:#075e54; --user-border:#0b7d6b;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui,-apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial; color: var(--text); }
+    /* Wallpaper pattern in light mode only */
+    body.theme-light {
+      background: radial-gradient(circle at 25px 25px, rgba(0,0,0,0.03) 2px, transparent 2px) 0 0/50px 50px,
+                  radial-gradient(circle at 5px 5px, rgba(0,0,0,0.02) 1.5px, transparent 1.5px) 0 0/25px 25px,
+                  var(--bg);
+    }
+    body.theme-dark { background: var(--bg); }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+    .card { 
+background: transparent; 
+display:flex; 
+flex-direction:column; 
+min-height: 80vh; 
+padding-top: 120px; 
+}
+
+    .header {
+position:fixed;
+top:0;
+left:0;
+right:0;
+z-index:9999;
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:12px;
+background:#075E54;
+padding:16px 20px;
+box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+    .header h1 { color:#ffffff; font-weight:700; margin:0; }
+    .header .sub { color: var(--muted); font-size:.9rem; }
+    .toggle { padding:8px 12px; border-radius:999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); color:#fff; border:none; font-weight:600; cursor:pointer; }
+
+    .controls { display:flex; gap:8px; align-items:center; color: var(--muted); margin: 6px 0 8px; flex-wrap:wrap; }
+    .controls label { font-size:.85rem; }
+    .controls select { background:#ffffff; color:inherit; border:1px solid #e0e0e0; border-radius:8px; padding:6px 8px; }
+    body.theme-dark .controls select { background:#0b1220; color:var(--text); border:1px solid #334155; }
+
+    .chat { flex:1 1 auto; overflow:auto; padding:8px 8px 0 8px; display:flex; flex-direction:column; gap:8px; }
+    .msg { max-width: 72%; padding: 8px 10px; border-radius: 12px; line-height:1.35; white-space: pre-wrap; position:relative; font-size: 0.97rem; }
+    .bot { background:var(--bot); border:1px solid var(--chip-border); align-self:flex-start; }
+    .user { background:var(--user); border:1px solid var(--user-border); align-self:flex-end; }
+    .msg .time { display:block; color:var(--muted); font-size:.72rem; margin-top:4px; text-align:right; }
+    .msg.bot::after { content:''; position:absolute; left:-6px; bottom:0; border-width:6px 6px 0 0; border-style:solid; border-color:var(--bot) transparent transparent transparent; }
+    .msg.user::after { content:''; position:absolute; right:-6px; bottom:0; border-width:6px 0 0 6px; border-style:solid; border-color:var(--user) transparent transparent transparent; }
+
+    .input-row { flex: 0 0 auto; display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap; position:sticky; bottom:0; background:var(--panel); padding:8px; border-top:1px solid var(--chip-border); border-radius:12px; }
+    input { flex: 1; min-width: 260px; padding: 10px 12px; border-radius: 20px; border: 1px solid #e0e0e0; background: #ffffff; color: var(--text); }
+    body.theme-dark input { border: 1px solid #334155; background:#0b1220; color: var(--text); }
+
+    button { padding:10px 14px; border-radius:20px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); color:#ffffff; border:none; font-weight:600; cursor:pointer; }
+
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#ffffff; color:var(--muted); font-size:.8rem; border:1px solid var(--chip-border); }
+    body.theme-dark .pill { background:#0b1220; }
+
+    .footer { font-size: .85rem; color: var(--muted); margin-top: 8px; }
+
+    .chips { display:flex; gap:8px; flex-wrap:wrap; }
+    .chip { padding:8px 12px; border-radius:999px; background: var(--chip); border:1px solid var(--chip-border); cursor:pointer; font-size:.9rem; color:var(--text); }
+    .chip.active { outline:2px solid var(--accent); }
+
+    .out { background:#ffffff; border:1px dashed var(--chip-border); padding:12px; border-radius:12px; white-space:pre-wrap; color:var(--text); }
+    body.theme-dark .out { background:#0b1220; }
+
+    .inline-start { display:inline-flex; gap:10px; align-items:center; }
+    .inline-start button { white-space:nowrap; }
+
+    /* Typing indicator */
+    .typing { padding:10px 14px; }
+    .typing .dots i { width:6px; height:6px; display:inline-block; margin:0 2px; border-radius:50%; background:#b0bec5; animation: blink 1.2s infinite; }
+    .typing .dots i:nth-child(2){ animation-delay:.2s; }
+    .typing .dots i:nth-child(3){ animation-delay:.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+
+    /* Quick refine row */
+    .refine { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .refine button { background:#e9f8f1; color:#075E54; border:1px solid #b8efd5; }
+    body.theme-dark .refine button { background:#093d35; color:#e5e7eb; border:1px solid #0f5a4f; }
+
+    /* Reactions */
+    .react-bar { position:absolute; right:6px; top:-22px; background:#ffffff; border:1px solid var(--chip-border); border-radius:999px; padding:2px 6px; opacity:0; transition:opacity .15s; display:flex; gap:4px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+    body.theme-dark .react-bar { background:#0b1220; }
+    .msg:hover .react-bar { opacity:1; }
+    .react-emoji { cursor:pointer; }
+    .react-emoji:hover { transform: scale(1.15); }
+    .react-badge { position:absolute; right:6px; bottom:-14px; font-size: .9rem; display:none; }
+
+    /* WhatsApp Share */
+    .wa { background:#25D366; color:#0b2e24; border:none; }
+
+    /* Quick-picker header */
+    .picker-title { font-weight:600; color:var(--muted); }
+  </style>
+
+<script id="vh-fix">(function(){
+function setVH(){var vh = window.innerHeight * 0.01; document.documentElement.style.setProperty('--vh', vh + 'px');}
+setVH(); window.addEventListener('resize', setVH, {passive:true}); window.addEventListener('orientationchange', setVH, {passive:true});
+})();</script>
+
+<style id="universal-mobile-fix-v2">
+  html, body { height: -webkit-fill-available; }
+  .card { min-height: calc(var(--vh, 1vh) * 100); }
+  .input-row { padding-bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 10; }
+</style>
+  </head>
+<body class="theme-light">
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1>Icebreaking Assistance</h1>
+        </div>
+        <button class="toggle" id="themeToggle" title="Toggle Light/Dark">Switch to Dark</button>
+      </div>
+
+      <div class="controls">
+        <label for="speed">Typing speed:</label>
+        <select id="speed">
+          <option value="200">Fast</option>
+          <option selected value="350">Normal</option>
+          <option value="700">Slow</option>
+        </select>
+      </div>
+
+      <div class="chat" id="chat"></div>
+      <div class="input-row" id="inputRow"></div>
+      <div class="footer">Runs fully in your browser. Click an option or press <b>Enter</b> to submit.</div>
+    </div>
+  </div>
+
+  <script>
+    // Theme toggle with localStorage
+    const bodyEl = document.body;
+    const themeToggleBtn = document.getElementById('themeToggle');
+    const savedTheme = localStorage.getItem('ibma_theme');
+    if (savedTheme) { bodyEl.className = savedTheme; themeToggleBtn.textContent = savedTheme==='theme-dark'?'Switch to Light':'Switch to Dark'; }
+    themeToggleBtn.onclick = () => {
+      const next = bodyEl.classList.contains('theme-dark') ? 'theme-light' : 'theme-dark';
+      bodyEl.className = next;
+      themeToggleBtn.textContent = next==='theme-dark'?'Switch to Light':'Switch to Dark';
+      localStorage.setItem('ibma_theme', next);
+    };
+
+    let TYPING_DELAY_MS = 350;
+    const speedSel = () => document.getElementById('speed');
+    function getDelay(){ return TYPING_DELAY_MS; }
+    window.addEventListener('change', (e)=>{
+      if (e.target && e.target.id === 'speed') {
+        const v = parseInt(e.target.value, 10);
+        if (!Number.isNaN(v)) TYPING_DELAY_MS = v;
+      }
+    });
+
+    
+    // ----------------------- EXCEL MODEL (baked in) -----------------------
+    // Extracted from "Icebreaking Assistance.xlsx"
+    const EXCEL_MODEL = {
+      ageGroups: ["18-25","26-45","46-60","60+"],
+      ageToCTA: {
+        "18-25": "Let me know if we can connect for a short meeting whenever you’re free.",
+        "26-45": "Would love to connect for a quick chat this week—whenever you say.",
+        "46-60": "If convenient, let’s connect for a concise discussion this week.",
+        "60+": "Happy to connect for a short call at a time that suits you."
+      },
+      ageToInsuranceFact: {
+        "18-25": "Do you know, 78% of Gen Z buyers say life insurance before 30 is a no‑brainer as you get a bigger sum assured for a smaller premium. ",
+        "26-45": "Do you know, Life insurance applications among adults under 40 have grown by 30% since 2023 as more young people prioritize financial protection.",
+        "46-60": "Do you know, even in US, 40% of Adults feel, their existing cover is insufficient to meet their financial needs.",
+        "60+": "Do you know, in developed economies, 60% of the adult population has some or the other type of Life Insurance "
+      },
+      professions: ["Salaried","Self Employed","Retired"],
+      professionToMessage: {
+        "Salaried": "I've been working with many working professionals like you to build long‑term financial cushions that protect their income and future plans.",
+        "Self Employed": "I’ve been helping many business owners set up simple financial safety nets that offer long‑term security and tax benefits.",
+        "Retired": "I’ve been assisting individuals set up stable financial protection plans that preserve savings and ensure lifelong security."
+      },
+      professionToAfterName: {
+        "Salaried": "Sir",
+        "Self Employed": "Ji",
+        "Retired": "Ji"
+      }
+    };
+
+    function computeIcebreakingOutput(name, age, profession) {
+      const greeting = "Hi"; // Front end!B15
+      const hopeLine = "Hope you are doing well. \nJust wanted to reach out. "; // Front end!B18
+      const afterName = (age === "18-25") ? "" : (EXCEL_MODEL.professionToAfterName[profession] || "");
+      const profMsg = EXCEL_MODEL.professionToMessage[profession] || "";
+      const fact = EXCEL_MODEL.ageToInsuranceFact[age] || "";
+      const cta = EXCEL_MODEL.ageToCTA[age] || "";
+
+      const firstLine = [greeting, name, afterName].filter(Boolean).join(" ");
+      const lines = [firstLine, hopeLine, profMsg, cta].filter(x => (x ?? "").toString().trim() !== "");
+      return lines.join("\n");
+    }
+
+const MODEL = {
+      inputs: [
+        { name: "Customer Name", prompt: "Name of the Customer? ", type: "text", allowedValues: ["Text"], default: null, required: true },
+        { name: "Age", prompt: "Age of the customer?", type: "choice", allowedValues: [], default: null, required: true },
+        { name: "Profession", prompt: "Profession of the Customer? ", type: "choice", allowedValues: [], default: null, required: true },
+      ],
+      output: { label: "Icebreaking Message" },
+      rule: {
+        firstMessage: "Before I give your first ice breaking message, I'll need some inputs, can you help me with that?",
+        startButton: "Yes!! Let's Begin!!"
+      }
+    };
+
+
+    const chat = document.getElementById('chat');
+    const inputRow = document.getElementById('inputRow');
+
+    function scrollToLatest() {
+      chat.scrollTop = chat.scrollHeight;
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    // Reactions
+    function addReactions(div){
+      const bar = document.createElement('div');
+      bar.className = 'react-bar';
+      ['\uD83D\uDC4D','❤️','\uD83D\uDE42'].forEach(r => {
+        const e = document.createElement('span'); e.className='react-emoji'; e.textContent=r; e.setAttribute('data-r', r); bar.appendChild(e);
+      });
+      const badge = document.createElement('div'); badge.className = 'react-badge';
+      bar.addEventListener('click', (ev)=>{
+        if (ev.target && ev.target.getAttribute('data-r')){
+          badge.textContent = ev.target.getAttribute('data-r');
+          badge.style.display = 'inline-block';
+        }
+      });
+      div.appendChild(bar); div.appendChild(badge);
+    }
+
+    // push() with timestamp + reactions
+    function push(role, text) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + role;
+      const span = document.createElement('span');
+      span.textContent = text;
+      div.appendChild(span);
+      const t = document.createElement('span');
+      t.className = 'time';
+      const dt = new Date();
+      t.textContent = dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      div.appendChild(t);
+      chat.appendChild(div);
+      addReactions(div);
+      scrollToLatest();
+      return div;
+    }
+
+    // Typing indicator + delayed bot say (uses selected speed)
+    function showTyping(ms) {
+      const tip = document.createElement('div');
+      tip.className = 'msg bot typing';
+      tip.innerHTML = '<span class="dots"><i></i><i></i><i></i></span>';
+      chat.appendChild(tip);
+      scrollToLatest();
+      return new Promise(res => setTimeout(()=> { tip.remove(); res(); }, ms));
+    }
+    async function say(text, delayMs) {
+      const d = typeof delayMs==='number' ? delayMs : getDelay();
+      await showTyping(d);
+      push('bot', text);
+    }
+
+    function clearInputRow(){ inputRow.innerHTML = ''; }
+
+    function scrollToBottom(){ scrollToLatest(); }
+
+    function resetFlow(renderImmediately){
+      try{
+        idx = 0;
+        for (const k in answers){ try{ delete answers[k]; }catch(e){} }
+        chat.innerHTML = '';
+        clearInputRow();
+        if (renderImmediately) renderStart();
+      }catch(e){
+        // last resort hard reload
+        location.reload();
+      }
+    }
+
+
+    const answers = {}; let idx = 0; let currentSubmit;
+
+    // Command helpers
+    const fieldOrder = () => MODEL.inputs.map(x => x.name);
+    function goToField(name){ const i = fieldOrder().indexOf(name); if (i>=0) { idx = i; askNext(); } }
+    function tryCommand(text){
+      const s = (text||'').trim().toLowerCase();
+      if (!s) return false;
+      if (s === 'restart') { idx=0; for (let k in answers) delete answers[k]; chat.innerHTML=''; renderStart(); return true; }
+      if (s === 'back') { idx = Math.max(0, idx-1); askNext(); return true; }
+      const m = s.match(/^edit\s+(.*)/);
+      if (m) {
+        const label = m[1].trim();
+        const target = fieldOrder().find(f => f.toLowerCase().startsWith(label));
+        if (target) { goToField(target); return true; }
+      }
+      return false;
+    }
+
+    // Soft NLP mappers for free-typed inputs
+    const norm = s => (s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+    const fuzzyPick = (input, options=[]) => {
+      const n = norm(input);
+      if (!n) return null;
+      const exact = options.find(o => norm(o) === n);
+      if (exact) return exact;
+      return options.find(o => norm(o).startsWith(n)) || null;
+    };
+    const mapAge = s => {
+      s = String(s||'').toLowerCase();
+      if (/^(\b)(1[8-9]|2[0-5])(\b)$/.test(s)) return "18-25";
+      if (/^(\b)(2[6-9]|3\d|4[0-5])(\b)$/.test(s)) return "26-45";
+      if (/^(\b)(4[6-9]|5\d|60)(\b)$/.test(s)) return "46-60";
+      if (/^(\b)(6\d|7\d|80|60\+)(\b)$/.test(s)) return "60+";
+      return null;
+    };
+
+    async function renderStart(){
+      const s = speedSel(); if (s) s.value = String(TYPING_DELAY_MS);
+      await say(MODEL.rule.firstMessage, getDelay());
+      const wrap = document.createElement('div');
+      wrap.className = 'msg bot';
+      const inline = document.createElement('span');
+      inline.className = 'inline-start';
+      const btn = document.createElement('button');
+      btn.textContent = MODEL.rule.startButton;
+      btn.onclick = () => { MODEL.inputs[1].allowedValues = EXCEL_MODEL.ageGroups.slice(); MODEL.inputs[2].allowedValues = EXCEL_MODEL.professions.slice(); askNext(); };
+      inline.appendChild(btn);
+      wrap.appendChild(inline);
+      const t = document.createElement('span');
+      t.className = 'time'; t.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      chat.appendChild(wrap);
+      addReactions(wrap);
+      setTimeout(scrollToLatest, 0);
+    }
+
+    function setGlobalEnter(handler){
+      currentSubmit = handler;
+      document.onkeydown = (e)=>{
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          if(typeof currentSubmit === 'function') currentSubmit();
+        }
+      };
+    }
+
+    async function askNext(){
+      clearInputRow();
+      if(idx >= MODEL.inputs.length){ await generateOutput(); return; }
+      var spec = MODEL.inputs[idx];
+      await say(spec.prompt, getDelay());
+
+      if(spec.type === 'choice' && (spec.allowedValues||[]).length){
+        const wrap = document.createElement('div');
+        wrap.className = 'chips';
+        (spec.allowedValues||[]).forEach(v=>{
+          const c = document.createElement('span');
+          c.className = 'chip';
+          c.textContent = v;
+          c.onclick = ()=>{ submitAnswer(spec, v); };
+          wrap.appendChild(c);
+        });
+        inputRow.appendChild(wrap);
+        setTimeout(scrollToLatest, 0);
+
+        const hint = document.createElement('span');
+        hint.className = 'pill';
+        hint.textContent = 'Press Enter to submit · Commands: back | restart | edit <field>';
+        inputRow.appendChild(hint);
+
+        const backBtn = document.createElement('button');
+        backBtn.textContent = 'Back'; backBtn.className='chip';
+        backBtn.onclick = ()=>{ idx = Math.max(0, idx-1); askNext(); };
+        inputRow.appendChild(backBtn);
+
+        let selected = '';
+        setGlobalEnter(()=>{
+          if(!selected && spec.required && !wrap.querySelector('.chip.active')){
+            alert('Please select an option or click one of the chips.'); return;
+          }
+          const active = wrap.querySelector('.chip.active');
+          const val = active ? active.textContent : selected;
+          submitAnswer(spec, val || '');
+        });
+        wrap.addEventListener('click', (e)=>{
+          if(e.target.classList.contains('chip')){
+            [...wrap.children].forEach(n=>n.classList.remove('active'));
+            e.target.classList.add('active');
+            selected = e.target.textContent;
+          }
+        });
+      } else {
+        const inp = document.createElement('input');
+        inputRow.appendChild(inp);
+        const btn = document.createElement('button');
+        btn.textContent = 'Submit';
+        btn.onclick = () => {
+          const v = inp.value.trim();
+          if (tryCommand(v)) return;
+          if(!v && spec.required){ alert('This field is required.'); return; }
+          let val = v;
+          if (spec.name === 'Age Group') { const m = mapAge(v); if (m) val = m; }
+          else if (['Profession','State','Tone','Residence'].includes(spec.name)) { const m = fuzzyPick(v, spec.allowedValues||[]); if (m) val = m; }
+          submitAnswer(spec, val);
+        };
+        inputRow.appendChild(btn);
+        const backBtn = document.createElement('button');
+        backBtn.textContent = 'Back'; backBtn.className='chip'; backBtn.onclick = ()=>{ idx = Math.max(0, idx-1); askNext(); };
+        inputRow.appendChild(backBtn);
+        inp.focus();
+        setTimeout(scrollToLatest, 0);
+        setGlobalEnter(()=> btn.click());
+      }
+    }
+
+    function submitAnswer(spec, value){
+      answers[spec.name] = value;
+      push('user', value || '(skip)');
+      if(spec.name === 'Advisor Name'){
+        idx = MODEL.inputs.length;
+        generateOutput();
+        return;
+      }
+      idx++; askNext();
+    }
+
+    // NEW: robust copy to clipboard (works in both secure/non-secure with fallback)
+    async function copyToClipboard(text){
+      try{
+        if (navigator.clipboard && window.isSecureContext){
+          await navigator.clipboard.writeText(text);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity='0'; ta.style.left='-9999px';
+          document.body.appendChild(ta); ta.focus(); ta.select();
+          const ok = document.execCommand('copy');
+          ta.remove();
+          if(!ok) throw new Error('execCommand failed');
+        }
+        return true;
+      }catch(e){
+        try{ window.prompt('Copy this message:', text); }catch(_e){}
+        return false;
+      }
+    }
+
+    // NEW: Prefer normal WhatsApp; graceful fallbacks
+    function shareOnWhatsApp(text){
+      const encoded = encodeURIComponent(text);
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile){
+        // Try normal WhatsApp app deep link first
+        window.location.href = 'whatsapp://send?text=' + encoded;
+        // Fallback to the universal web endpoint shortly after
+        setTimeout(()=>{ window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank'); }, 500);
+      } else {
+        // Desktop web WhatsApp
+        window.open('https://web.whatsapp.com/send?text=' + encoded, '_blank');
+      }
+    }
+
+    // NEW: Quick picker to change a single field and immediately regenerate output
+    function showQuickPicker(fieldName, label){
+      clearInputRow();
+      const spec = MODEL.inputs.find(x => x.name === fieldName);
+      const title = document.createElement('span');
+      title.className = 'picker-title';
+      title.textContent = 'Select ' + (label || fieldName) + ':';
+      inputRow.appendChild(title);
+
+      const wrap = document.createElement('div'); wrap.className='chips';
+      const allowed = (spec && spec.allowedValues) ? spec.allowedValues : [];
+      allowed.forEach(v=>{
+        const c = document.createElement('span'); c.className='chip'; c.textContent = v;
+        c.onclick = ()=>{ answers[fieldName] = v; generateOutput(); };
+        wrap.appendChild(c);
+      });
+      inputRow.appendChild(wrap);
+
+      const cancel = document.createElement('button'); cancel.textContent='Cancel'; cancel.className='chip';
+      cancel.onclick = ()=>{ generateOutput(); };
+      inputRow.appendChild(cancel);
+
+      document.onkeydown = null; // no Enter handling for quick picker
+      setTimeout(scrollToLatest, 0);
+    }
+async function generateOutput(){
+  clearInputRow();
+  document.onkeydown = null;
+
+  const name = (answers['Customer Name'] || '').trim();
+  const age = (answers['Age'] || '').trim();
+  const profession = (answers['Profession'] || '').trim();
+
+  const finalMsg = computeIcebreakingOutput(name, age, profession);
+
+  await say(MODEL.output.label, getDelay());
+
+  const box = document.createElement('div');
+  box.className = 'out';
+  box.textContent = finalMsg;
+  chat.appendChild(box);
+  scrollToLatest();
+
+  const copyBtn = document.createElement('button');
+  copyBtn.textContent = 'Copy Message';
+  copyBtn.onclick = async () => {
+    const ok = await copyToClipboard(finalMsg);
+    copyBtn.textContent = ok ? 'Copied!' : 'Copy failed';
+    setTimeout(() => (copyBtn.textContent = 'Copy Message'), 1500);
+  };
+  inputRow.appendChild(copyBtn);
+
+  const waBtn = document.createElement('button');
+  waBtn.textContent = 'Share on WhatsApp';
+  waBtn.className = 'wa';
+  waBtn.onclick = () => shareOnWhatsApp(finalMsg);
+  inputRow.appendChild(waBtn);
+
+  const restartBtn = document.createElement('button');
+  restartBtn.textContent = 'Start Over';
+  restartBtn.onclick = () => resetFlow(true);
+  inputRow.appendChild(restartBtn);
+
+  scrollToBottom();
+}
+
+renderStart();
+  
+// Ensure first message visible on page open
+window.addEventListener('load', function(){
+  try{
+    window.scrollTo(0,0);
+    var c=document.getElementById('chat');
+    if(c){ c.scrollTop = 0; }
+  }catch(e){}
+});
+
+</script>
+</body>
+</html>
