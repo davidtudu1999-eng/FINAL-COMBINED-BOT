@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#075E54"/>
+  <title>Profile Intelligence</title>
+  <style>
+    :root { 
+      --text:#111;
+--wa:#075E54; --wa2:#128C7E; --bg:#e5ddd5; --card:#ffffff; --btn1:#25D366; --btn2:#128C7E; }
+    *{box-sizing:border-box}
+    body{
+      color: var(--text);margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);}
+    .header{
+      background: linear-gradient(90deg,var(--wa),var(--wa2));
+      color:#fff;
+      padding:18px 18px;
+      font-size:26px;
+      font-weight:800;
+      letter-spacing:.2px;
+      text-align:left;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .wrap{padding-top:100px;max-width:820px;margin:0 auto;min-height:100vh;}
+    .bubble{
+      margin:18px;padding:18px 20px;background:var(--card);
+      border-radius:18px;font-size:20px;line-height:1.4;
+      box-shadow:0 6px 22px rgba(0,0,0,.08);
+    }
+    .bubble h2{margin:0 0 10px;font-size:22px}
+    .sub{margin:0;color:#334}
+    .hint{margin-top:10px;font-size:16px;color:#556}
+    .btnRow{
+      display:flex;gap:16px;flex-wrap:wrap;
+      justify-content:center;padding:10px 18px 30px;
+    }
+    .btn{
+      border:none;cursor:pointer;padding:18px 26px;border-radius:999px;
+      font-weight:900;font-size:18px;color:#fff;
+      background:linear-gradient(90deg,var(--btn1),var(--btn2));
+      min-width:220px;
+    }
+    .smallNote{
+      margin:0 18px 22px;
+      font-size:14px;color:#566; text-align:center;
+    }
+    code{background:#f3f3f3;padding:2px 6px;border-radius:8px}
+  
+
+    html[data-theme="dark"]{
+      --bg:#0b141a;
+      --card:#1f2c33;
+      --muted:#b9c2c7;
+      --shadow: rgba(0,0,0,.35);
+      --text:#e9edef;
+    }
+    .theme-toggle{
+      border:1px solid rgba(255,255,255,.65);
+      background: rgba(255,255,255,.12);
+      color:#fff;
+      padding:8px 12px;
+      border-radius:999px;
+      font-weight:700;
+      font-size:14px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .theme-toggle:active{ transform: scale(.98); }
+</style>
+</head>
+<body>
+  <div class="header"><span>Profile Intelligence</span><button id="themeToggle" class="theme-toggle" type="button">Dark</button></div>
+
+  <div class="wrap">
+    <div class="bubble">
+      <h2>Let’s first visit the client’s LinkedIn profile.</h2>
+      <p class="sub">Once you open the profile, you’ll get a <b>Get Insights</b> button to generate the 7 key discussion points.</p>
+      <p class="hint">Tip: If LinkedIn asks to log in, please log in once — you won’t need to do it again in the app.</p>
+    </div>
+
+    <div class="btnRow">
+      <button class="btn" onclick="openLinkedIn()">Let’s Go!!</button>
+    </div>
+
+    <p class="smallNote">
+      If you’re not using the app version, this will open LinkedIn in your browser.
+    </p>
+  </div>
+
+  <script>
+    function openLinkedIn(){
+      // Android app bridge (WebView)
+      try{
+        if(window.Android && typeof window.Android.openLinkedIn === "function"){
+          window.Android.openLinkedIn();
+          return;
+        }
+      }catch(e){}
+      // Fallback (normal browser)
+      window.location.href = "https://www.linkedin.com/";
+    }
+  
+
+    // Theme toggle (light/dark)
+    (function(){
+      const btn = document.getElementById('themeToggle');
+      const root = document.documentElement;
+      function setTheme(t){
+        if(t === 'dark'){ root.dataset.theme = 'dark'; btn.textContent = 'Light'; }
+        else { delete root.dataset.theme; btn.textContent = 'Dark'; }
+        try{ localStorage.setItem('tara_theme', t); }catch(e){}
+      }
+      let saved = 'light';
+      try{ saved = localStorage.getItem('tara_theme') || 'light'; }catch(e){}
+      setTheme(saved);
+      btn.addEventListener('click', function(){
+        const current = root.dataset.theme === 'dark' ? 'dark' : 'light';
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+    })();
+
+</script>
+</body>
+</html>
