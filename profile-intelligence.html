@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Profile Intelligence</title>
+  <style>
+    :root{
+      --green:#0f6a63;
+      --bg:#e8e0d6;
+      --card:#ffffff;
+      --ink:#0d1b2a;
+      --muted:#5f6b7a;
+      --pill:#e9fbf0;
+      --pillBorder:#bfe7cf;
+      --btn1:#27c76b;
+      --btn2:#0f7f76;
+      --shadow:0 12px 25px rgba(0,0,0,.12);
+      --radius:28px;
+    }
+    body.dark{
+      --bg:#0d1416;
+      --card:#121b1d;
+      --ink:#eaf2f6;
+      --muted:#b7c2cb;
+      --pill:#0e2a20;
+      --pillBorder:#1e5b44;
+      --shadow:0 12px 25px rgba(0,0,0,.4);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--ink);
+    }
+
+    /* Header */
+    .topbar{
+      background:var(--green);
+      padding:18px 18px 22px;
+      position:sticky;
+      top:0;
+      z-index:5;
+      box-shadow:0 6px 16px rgba(0,0,0,.18);
+    }
+    .topbarRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .title{
+      font-size:44px;
+      font-weight:900;
+      line-height:1.02;
+      letter-spacing:.2px;
+      color:#fff;
+    }
+    .toggle{
+      border:2px solid rgba(255,255,255,.65);
+      color:#fff;
+      background:transparent;
+      padding:10px 18px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:18px;
+      cursor:pointer;
+      min-width:86px;
+    }
+
+    .wrap{max-width:720px;margin:0 auto;padding:26px 18px 28px;}
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:26px 22px;
+      overflow:hidden;
+    }
+    .h1{
+      font-size:44px;
+      font-weight:900;
+      margin:0 0 10px 0;
+      line-height:1.02;
+      letter-spacing:.2px;
+    }
+    .sub{
+      margin:0 0 18px 0;
+      color:var(--muted);
+      font-size:19px;
+      line-height:1.5;
+      font-weight:650;
+    }
+
+    .cta{
+      width:100%;
+      border:0;
+      padding:18px 22px;
+      border-radius:999px;
+      font-size:32px;
+      font-weight:900;
+      color:#fff;
+      cursor:pointer;
+      background:linear-gradient(90deg,var(--btn1),var(--btn2));
+      box-shadow:0 14px 25px rgba(16, 122, 90, .25);
+    }
+    .note{
+      margin-top:14px;
+      color:var(--muted);
+      font-weight:800;
+      text-align:center;
+    }
+
+    /* Progress bar */
+    .progressWrap{
+      margin-top:18px;
+      padding:14px 14px 10px;
+      border-radius:18px;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(0,0,0,.03);
+    }
+    body.dark .progressWrap{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.06);}
+    .progressRow{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .progressLabel{font-weight:900;color:var(--muted);}
+    .progressPct{font-weight:900;}
+    .bar{
+      height:10px;border-radius:999px;
+      background:rgba(0,0,0,.12);
+      overflow:hidden;
+      margin-top:10px;
+    }
+    body.dark .bar{background:rgba(255,255,255,.18);}
+    .fill{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,#36d87e,#10a38f);
+      border-radius:999px;
+      transition:width .25s ease;
+    }
+
+    /* Output Accordion */
+    .status{
+      text-align:center;
+      font-weight:900;
+      color:var(--muted);
+      margin-top:6px;
+      margin-bottom:18px;
+      font-size:18px;
+    }
+    .acc{display:flex;flex-direction:column;gap:14px;}
+    .item{
+      border-radius:22px;
+      background:var(--pill);
+      border:2px solid var(--pillBorder);
+      overflow:hidden;
+    }
+    .head{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:16px 16px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .plus{
+      width:34px;height:34px;
+      display:flex;align-items:center;justify-content:center;
+      border-radius:12px;
+      background:rgba(0,0,0,.06);
+      font-weight:1000;
+      font-size:22px;
+      flex:0 0 auto;
+    }
+    body.dark .plus{background:rgba(255,255,255,.08);}
+    .htext{
+      font-size:22px;
+      font-weight:950;
+      line-height:1.2;
+      flex:1;
+    }
+    .body{
+      display:none;
+      padding:0 18px 18px 64px;
+      color:var(--ink);
+      font-size:18px;
+      line-height:1.55;
+      font-weight:650;
+      white-space:pre-wrap;
+    }
+    .item.open .body{display:block;}
+    .item.open .plus{background:rgba(0,0,0,.12);}
+    body.dark .item.open .plus{background:rgba(255,255,255,.16);}
+    .actions{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      margin-top:18px;
+    }
+    .btn{
+      width:100%;
+      border:0;
+      padding:18px 22px;
+      border-radius:999px;
+      font-size:28px;
+      font-weight:950;
+      color:#fff;
+      cursor:pointer;
+      background:linear-gradient(90deg,var(--btn1),var(--btn2));
+    }
+    .btn.secondary{
+      background:transparent;
+      color:var(--btn2);
+      border:2px solid rgba(0,0,0,.15);
+    }
+    body.dark .btn.secondary{border-color:rgba(255,255,255,.22);color:#baf5df;}
+
+    .hidden{display:none !important;}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbarRow">
+      <div class="title">Profile<br/>Intelligence</div>
+      <button id="darkToggle" class="toggle" type="button">Dark</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- START CARD -->
+    <section id="startCard" class="card">
+      <h1 class="h1">Let’s first visit the client’s LinkedIn profile.</h1>
+      <p class="sub">Once you open the profile, scroll a bit. The app will auto-capture content and enable insights.</p>
+
+      <button id="goBtn" class="cta" type="button">Let’s Go!!</button>
+      <div class="note">App mode is required for auto capture.</div>
+
+      <div id="progressWrap" class="progressWrap hidden" aria-live="polite">
+        <div class="progressRow">
+          <div class="progressLabel">Capture progress</div>
+          <div class="progressPct"><span id="pct">0</span>%</div>
+        </div>
+        <div class="bar"><div id="fill" class="fill"></div></div>
+      </div>
+
+      <div style="height:14px"></div>
+      <button id="getInsightsBtn" class="btn hidden" type="button">Get Insights</button>
+    </section>
+
+    <!-- OUTPUT CARD -->
+    <section id="outCard" class="card hidden">
+      <div class="h1" style="margin-bottom:4px;font-size:46px;">Profile Intelligence</div>
+      <div class="status">Ready</div>
+
+      <div id="acc" class="acc"></div>
+
+      <div class="actions">
+        <button id="downloadBtn" class="btn" type="button">Download</button>
+        <button id="shareBtn" class="btn" type="button">Share</button>
+        <button id="homeBtn" class="btn secondary" type="button">Home</button>
+      </div>
+    </section>
+  </main>
+
+<script>
+/* ====== START PARAM: force clean start ====== */
+(function(){
+  try{
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("start") === "1"){
+      localStorage.removeItem("pi_captured");
+      localStorage.removeItem("pi_capturedText");
+      localStorage.removeItem("pi_points_json");
+      localStorage.removeItem("pi_started");
+      localStorage.removeItem("pi_progress");
+    }
+  }catch(e){}
+})();
+
+/* ====== Theme ====== */
+(function(){
+  const key="pi_theme";
+  const btn=document.getElementById("darkToggle");
+  const set=(mode)=>{
+    document.body.classList.toggle("dark", mode==="dark");
+    btn.textContent = mode==="dark" ? "Light" : "Dark";
+    try{ localStorage.setItem(key, mode); }catch(e){}
+  };
+  const saved = (()=>{ try{return localStorage.getItem(key);}catch(e){return null;} })();
+  set(saved==="dark" ? "dark" : "light");
+  btn.addEventListener("click", ()=> set(document.body.classList.contains("dark") ? "light" : "dark"));
+})();
+
+/* ====== Helpers ====== */
+const $ = (id)=>document.getElementById(id);
+function show(el){ el.classList.remove("hidden"); }
+function hide(el){ el.classList.add("hidden"); }
+
+function setCaptureProgress(p){
+  const progressWrap = $("progressWrap");
+  const pctEl = $("pct");
+  const fill = $("fill");
+  const pct = Math.max(0, Math.min(100, Number(p)||0));
+  pctEl.textContent = String(Math.round(pct));
+  fill.style.width = pct + "%";
+  if (pct > 0 && pct < 100) show(progressWrap);
+  if (pct >= 100) hide(progressWrap);
+  try{ localStorage.setItem("pi_progress", String(pct)); }catch(e){}
+}
+window.setCaptureProgress = setCaptureProgress; // Android can call this via evaluateJavascript
+
+function canStartCapture(){
+  // App sets pi_started=1 and pi_url when it detects LinkedIn profile.
+  try{
+    const started = localStorage.getItem("pi_started")==="1";
+    const u = (localStorage.getItem("pi_url")||"").toLowerCase();
+    const isProfile = u.includes("linkedin.com/in/") || u.includes("linkedin.com/pub/");
+    return started || isProfile;
+  }catch(e){ return false; }
+}
+
+/* ====== Accordion (7 headings) ====== */
+const DEFAULT_SECTIONS = [
+  { key:"intro",  title:"Quick intro & rapport line", body:"" },
+  { key:"prio",   title:"Likely priorities inferred from roles/achievements", body:"" },
+  { key:"pain",   title:"Possible pain points in their current journey", body:"" },
+  { key:"start",  title:"Conversation starters based on recent activity", body:"" },
+  { key:"tone",   title:"Ideal tone & language to use", body:"" },
+  { key:"next",   title:"Suggested next message to send", body:"" },
+  { key:"follow", title:"Best follow-up angle for a meeting", body:"" },
+];
+
+function loadPoints(){
+  // Prefer structured JSON stored by app (pi_points_json), otherwise fallback to capturedText.
+  let points = null;
+  try{
+    const raw = localStorage.getItem("pi_points_json");
+    if (raw) points = JSON.parse(raw);
+  }catch(e){ points=null; }
+
+  // Normalize to 7 sections.
+  const out = DEFAULT_SECTIONS.map(s=>({ ...s }));
+  if (points && typeof points==="object"){
+    // accept keys matching our keys OR array of {title, body}
+    if (Array.isArray(points)){
+      for (let i=0;i<Math.min(points.length,out.length);i++){
+        out[i].title = points[i].title || out[i].title;
+        out[i].body = points[i].body || points[i].text || "";
+      }
+    }else{
+      for (const s of out){
+        if (points[s.key]) s.body = String(points[s.key]);
+      }
+    }
+  }else{
+    const captured = (localStorage.getItem("pi_capturedText") || localStorage.getItem("pi_captured") || "").trim();
+    if (captured){
+      // very simple fallback: show everything in first section
+      out[0].body = captured;
+    }
+  }
+  return out;
+}
+
+function renderAccordion(sections){
+  const acc = $("acc");
+  acc.innerHTML = "";
+  sections.forEach((sec, idx)=>{
+    const item = document.createElement("div");
+    item.className = "item" + (idx===0 ? " open" : "");
+    item.dataset.idx = String(idx);
+
+    const head = document.createElement("div");
+    head.className = "head";
+
+    const plus = document.createElement("div");
+    plus.className = "plus";
+    plus.textContent = idx===0 ? "−" : "+";
+
+    const htext = document.createElement("div");
+    htext.className = "htext";
+    htext.textContent = sec.title;
+
+    head.appendChild(plus);
+    head.appendChild(htext);
+
+    const body = document.createElement("div");
+    body.className = "body";
+    body.textContent = sec.body || "—";
+
+    head.addEventListener("click", ()=>{
+      // Only one open at a time
+      [...acc.children].forEach((child, i)=>{
+        const open = (i===idx) ? !child.classList.contains("open") : false;
+        child.classList.toggle("open", open);
+        const p = child.querySelector(".plus");
+        if (p) p.textContent = open ? "−" : "+";
+      });
+    });
+
+    item.appendChild(head);
+    item.appendChild(body);
+    acc.appendChild(item);
+  });
+}
+
+/* ====== Navigation / Start / Insights ====== */
+function showStart(){
+  hide($("outCard"));
+  show($("startCard"));
+  hide($("getInsightsBtn"));
+  // show progress if available
+  try{
+    const p = Number(localStorage.getItem("pi_progress")||"0");
+    if (p>0 && p<100) setCaptureProgress(p);
+  }catch(e){}
+}
+
+function showOutput(){
+  hide($("startCard"));
+  show($("outCard"));
+  const sections = loadPoints();
+  renderAccordion(sections);
+}
+
+function openLinkedIn(){
+  // In app mode, Android should intercept this URL in WebView client and open within WebView.
+  const url = "https://www.linkedin.com/feed/";
+  window.location.href = url;
+}
+
+/* Buttons */
+$("goBtn").addEventListener("click", openLinkedIn);
+$("getInsightsBtn").addEventListener("click", ()=>{
+  // App should have captured and stored points/text by now.
+  showOutput();
+});
+$("homeBtn").addEventListener("click", ()=>{ window.location.href = "index.html"; });
+
+/* Download/share (basic; app can override via JS interface if available) */
+function pageAsText(){
+  const sections = loadPoints();
+  return sections.map(s=>`${s.title}\n${(s.body||"—")}\n`).join("\n");
+}
+async function downloadTxt(){
+  const blob = new Blob([pageAsText()], {type:"text/plain"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "profile-intelligence.txt";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();}, 500);
+}
+$("downloadBtn").addEventListener("click", downloadTxt);
+
+$("shareBtn").addEventListener("click", async ()=>{
+  const text = pageAsText();
+  try{
+    if (navigator.share){
+      await navigator.share({ text, title:"Profile Intelligence" });
+      return;
+    }
+  }catch(e){}
+  await downloadTxt();
+  alert("Sharing not supported here. Downloaded a text file instead.");
+});
+
+/* ====== Boot logic ======
+   - If we already have capture stored, show output.
+   - Else show start. Enable 'Get Insights' only when capture can start (app detected profile).
+*/
+(function boot(){
+  const hasCapture = (()=> {
+    try{
+      return !!(localStorage.getItem("pi_points_json") || localStorage.getItem("pi_capturedText") || localStorage.getItem("pi_captured"));
+    }catch(e){ return false; }
+  })();
+
+  if (hasCapture){
+    showOutput();
+  }else{
+    showStart();
+  }
+
+  // Poll: enable Get Insights once we know a LinkedIn profile page is open (app sets localStorage)
+  setInterval(()=>{
+    try{
+      if (canStartCapture()){
+        show($("getInsightsBtn"));
+      }
+      const p = Number(localStorage.getItem("pi_progress")||"0");
+      if (p>0 && p<100) setCaptureProgress(p);
+    }catch(e){}
+  }, 700);
+})();
+</script>
+</body>
+</html>
