@@ -398,7 +398,7 @@
         }catch(e){}
       };
 
-  async function generateInsightsFromCapturedText(capturedText){
+async function generateInsightsFromCapturedText(capturedText){
   const workerUrl = getWorkerUrl();
 
   const res = await fetch(workerUrl, {
@@ -407,7 +407,7 @@
     body: JSON.stringify({ capturedText })
   });
 
-  const raw = await res.text(); // <-- read raw text first
+  const raw = await res.text();
 
   if(!res.ok){
     throw new Error(`Worker HTTP ${res.status}. Body: ${raw.slice(0, 300)}`);
@@ -419,6 +419,30 @@
   }catch(e){
     throw new Error(`Worker did not return JSON. Body: ${raw.slice(0, 300)}`);
   }
+
+  let pts = data.points ?? data.insights ?? data.result ?? data.output ?? data.message ?? data;
+
+  // string -> bullets
+  if (typeof pts === 'string') {
+    const lines = pts.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 7);
+    return lines.map((t, i) => ({ title: `Insight ${i + 1}`, body: t }));
+  }
+
+  // array of strings -> objects
+  if (Array.isArray(pts) && pts.length && typeof pts[0] === 'string') {
+    return pts.slice(0, 7).map((t, i) => ({ title: `Insight ${i + 1}`, body: t }));
+  }
+
+  // array of objects -> keep
+  if (Array.isArray(pts)) return pts.slice(0, 7);
+
+  // object -> stringify
+  if (pts && typeof pts === 'object') {
+    return [{ title: 'Insights', body: JSON.stringify(pts) }];
+  }
+
+  return [];
+}
 
   // --- Accept MANY shapes ---
   // A) { points: [...] }
