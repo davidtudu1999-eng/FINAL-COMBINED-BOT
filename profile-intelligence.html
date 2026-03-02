@@ -14,6 +14,7 @@
   --muted:#64748b;
   --btn1:#22c55e;
   --btn2:#0ea5a0;
+  --danger:#ef4444;
 }
 body.dark{
   --bg:#0b1220;
@@ -21,6 +22,7 @@ body.dark{
   --text:#f8fafc;
   --muted:#94a3b8;
 }
+*{box-sizing:border-box}
 body{
   margin:0;
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
@@ -33,10 +35,11 @@ header{
   padding:20px;
   display:flex;
   justify-content:space-between;
+  align-items:center;
 }
 header h1{margin:0;font-size:34px;}
 .toggle{
-  border:2px solid #fff;
+  border:2px solid rgba(255,255,255,.75);
   background:transparent;
   color:#fff;
   border-radius:999px;
@@ -53,19 +56,25 @@ main{
   background:var(--card);
   border-radius:20px;
   padding:26px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12);
 }
+.ctaRow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
 .cta{
   border:none;
   border-radius:999px;
-  padding:16px 40px;
-  font-size:22px;
+  padding:16px 34px;
+  font-size:20px;
   font-weight:900;
   color:#fff;
   background:linear-gradient(90deg,var(--btn1),var(--btn2));
   cursor:pointer;
+  min-width:220px;
+}
+.btnDanger{
+  background:var(--danger);
 }
 .status{
-  margin-top:10px;
+  margin-top:12px;
   text-align:center;
   font-weight:800;
   color:var(--muted);
@@ -74,14 +83,17 @@ main{
   margin-top:16px;
   list-style:none;
   padding:0;
+  display:grid;
+  gap:10px;
 }
 .point{
   background:rgba(34,197,94,.12);
   padding:14px;
   border-radius:14px;
-  margin-bottom:10px;
-  font-weight:700;
+  font-weight:750;
+  line-height:1.35;
 }
+.small{font-size:14px;color:var(--muted);font-weight:700;margin-top:10px;text-align:center}
 </style>
 </head>
 
@@ -89,163 +101,240 @@ main{
 
 <header>
   <h1>Profile Intelligence</h1>
-  <button class="toggle" id="toggleBtn">Dark</button>
+  <button class="toggle" id="toggleBtn" type="button">Dark</button>
 </header>
 
 <main>
 
-<section class="card" id="introCard">
-  <h2>Visit the client’s LinkedIn profile.</h2>
-  <p>Scroll a bit after opening. Then come back and tap Get Insights.</p>
-  <br/>
-  <button class="cta" id="goBtn">Let’s Go!!</button>
+<section class="card" id="introCard" style="display:none;">
+  <h2>Visit the client’s LinkedIn profile</h2>
+  <p style="margin:8px 0 0;color:var(--muted);font-weight:700;line-height:1.35">
+    Open the profile in LinkedIn, scroll a bit so the app can capture text.
+    Then return here and tap <b>Get Insights</b>.
+  </p>
+
+  <div class="ctaRow">
+    <button class="cta" id="goBtn" type="button">Let’s Go!!</button>
+  </div>
+
+  <div class="small">App mode is required for auto capture.</div>
 </section>
 
 <section class="card" id="outCard" style="display:none;">
-  <button class="cta" id="insightsBtn">Get Insights</button>
+  <div class="ctaRow">
+    <button class="cta" id="insightsBtn" type="button">Get Insights</button>
+    <button class="cta btnDanger" id="resetBtn" type="button">Reset</button>
+  </div>
+
   <div class="status" id="status">Open LinkedIn profile and scroll.</div>
   <ul class="points" id="points"></ul>
+  <div class="small" id="debugHint"></div>
 </section>
 
 </main>
 
 <script>
 (function(){
-
-// ---------- Theme ----------
-const body = document.body;
-const toggleBtn = document.getElementById('toggleBtn');
-function applyTheme(t){
-  body.classList.toggle('dark', t==='dark');
-  localStorage.setItem('theme',t);
-  toggleBtn.textContent = t==='dark'?'Light':'Dark';
-}
-applyTheme(localStorage.getItem('theme')||'light');
-toggleBtn.onclick=()=>applyTheme(body.classList.contains('dark')?'light':'dark');
-
-// ---------- Worker URL ----------
-const WORKER_URL="https://dry-fire-c28e.davidtudu1999.workers.dev";
-
-// ---------- Android capture getter ----------
-function getCaptured(){
+  // ---------- HARD RESET OF OLD STATE (prevents “stuck error”) ----------
+  // We keep captured text, but clear old points/errors from older builds.
   try{
-    if(window.Android && Android.getCapturedProfileText){
-      const t=Android.getCapturedProfileText()||'';
-      if(t.length>100){
-        localStorage.setItem('pi_captured',t);
-        return t;
-      }
-    }
+    localStorage.removeItem('pi_points');
+    localStorage.removeItem('pi_error');
   }catch(e){}
-  return localStorage.getItem('pi_captured')||'';
-}
 
-// Android injection support
-window.PI_setCapturedText=function(text){
-  localStorage.setItem('pi_captured',text||'');
-  showOutput();
-  document.getElementById('status').textContent='Captured. Tap Get Insights.';
-};
+  // ---------- Theme ----------
+  const body = document.body;
+  const toggleBtn = document.getElementById('toggleBtn');
+  function applyTheme(t){
+    body.classList.toggle('dark', t==='dark');
+    localStorage.setItem('theme',t);
+    toggleBtn.textContent = t==='dark'?'Light':'Dark';
+  }
+  applyTheme(localStorage.getItem('theme')||'light');
+  toggleBtn.onclick=()=>applyTheme(body.classList.contains('dark')?'light':'dark');
 
-// ---------- Views ----------
-const intro=document.getElementById('introCard');
-const out=document.getElementById('outCard');
-const statusEl=document.getElementById('status');
-const pointsEl=document.getElementById('points');
+  // ---------- Worker URL ----------
+  const WORKER_URL = "https://dry-fire-c28e.davidtudu1999.workers.dev";
 
-function showOutput(){
-  intro.style.display='none';
-  out.style.display='';
-}
+  // ---------- DOM ----------
+  const introCard = document.getElementById('introCard');
+  const outCard   = document.getElementById('outCard');
+  const statusEl  = document.getElementById('status');
+  const pointsEl  = document.getElementById('points');
+  const debugHint = document.getElementById('debugHint');
 
-// ---------- Open LinkedIn ----------
-document.getElementById('goBtn').onclick=()=>{
-  if(window.Android && Android.startLinkedInCapture){
-    Android.startLinkedInCapture();
+  function showIntro(){ introCard.style.display=''; outCard.style.display='none'; }
+  function showOutput(){ introCard.style.display='none'; outCard.style.display=''; }
+
+  // ---------- Capture helpers ----------
+  function getCaptured(){
+    // Prefer Android getter if present
+    try{
+      if(window.Android && typeof Android.getCapturedProfileText === 'function'){
+        const t = (Android.getCapturedProfileText() || '').trim();
+        if(t.length > 50){
+          localStorage.setItem('pi_captured', t);
+          return t;
+        }
+      }
+    }catch(e){}
+    return (localStorage.getItem('pi_captured') || '').trim();
+  }
+
+  // Android can directly inject captured text
+  window.PI_setCapturedText = function(text){
+    try{
+      const t = (text == null) ? '' : String(text);
+      localStorage.setItem('pi_captured', t);
+    }catch(e){}
+    showOutput();
+    statusEl.textContent = 'Captured. Tap “Get Insights”.';
+    debugHint.textContent = '';
+  };
+
+  // ---------- Open LinkedIn ----------
+  document.getElementById('goBtn').onclick = () => {
+    try{
+      if(window.Android && typeof Android.startLinkedInCapture === 'function'){
+        Android.startLinkedInCapture();
+        return;
+      }
+      if(window.Android && typeof Android.openLinkedIn === 'function'){
+        Android.openLinkedIn();
+        return;
+      }
+    }catch(e){}
+    // fallback
+    window.location.href = "https://www.linkedin.com/";
+  };
+
+  // ---------- Render ----------
+  function renderPoints(arr){
+    pointsEl.innerHTML = '';
+    if(!Array.isArray(arr) || arr.length === 0){
+      pointsEl.innerHTML = '<li class="point">No insights returned from Worker.</li>';
+      return;
+    }
+    arr.slice(0,7).forEach((p,i)=>{
+      const li = document.createElement('li');
+      li.className = 'point';
+      if(typeof p === 'string'){
+        li.textContent = (i+1)+') ' + p;
+      }else{
+        const title = p.title ? (p.title + ': ') : '';
+        const body  = p.body || p.text || JSON.stringify(p);
+        li.textContent = (i+1)+') ' + title + body;
+      }
+      pointsEl.appendChild(li);
+    });
+  }
+
+  // ---------- Worker call ----------
+  async function fetchInsights(text){
+    const res = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      // send ALL common keys so worker validation passes
+      body: JSON.stringify({
+        rawText: text,
+        profileText: text,
+        capturedText: text
+      })
+    });
+
+    const raw = await res.text();
+
+    if(!res.ok){
+      // Worker error JSON/text both will show
+      throw new Error(raw.slice(0, 400));
+    }
+
+    let data;
+    try{
+      data = JSON.parse(raw);
+    }catch(e){
+      throw new Error("Worker returned non-JSON: " + raw.slice(0, 300));
+    }
+
+    let pts = data.points ?? data.insights ?? data.result ?? data.output ?? data.message ?? data;
+
+    // normalize string -> bullets
+    if(typeof pts === 'string'){
+      const lines = pts.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,7);
+      return lines.length ? lines : [pts];
+    }
+
+    // array of strings
+    if(Array.isArray(pts) && pts.length && typeof pts[0] === 'string'){
+      return pts.slice(0,7);
+    }
+
+    // array of objects
+    if(Array.isArray(pts)){
+      return pts.slice(0,7);
+    }
+
+    // object
+    if(pts && typeof pts === 'object'){
+      return [pts];
+    }
+
+    return [];
+  }
+
+  // ---------- Buttons ----------
+  document.getElementById('insightsBtn').onclick = async () => {
+    const text = getCaptured();
+    debugHint.textContent = 'Captured length: ' + text.length;
+
+    if(text.length < 50){
+      showIntro();
+      statusEl.textContent = 'No captured text found. Open LinkedIn and scroll.';
+      return;
+    }
+
+    showOutput();
+    statusEl.textContent = 'Generating insights…';
+    pointsEl.innerHTML = '';
+    try{
+      const pts = await fetchInsights(text);
+      localStorage.setItem('pi_points', JSON.stringify(pts));
+      statusEl.textContent = 'Ready';
+      renderPoints(pts);
+    }catch(e){
+      statusEl.textContent = 'Error: ' + (e?.message || e);
+      renderPoints([]);
+    }
+  };
+
+  document.getElementById('resetBtn').onclick = () => {
+    try{
+      localStorage.removeItem('pi_captured');
+      localStorage.removeItem('pi_points');
+      localStorage.removeItem('pi_error');
+    }catch(e){}
+    location.reload();
+  };
+
+  // ---------- Boot ----------
+  const cached = localStorage.getItem('pi_points');
+  if(cached){
+    try{
+      const pts = JSON.parse(cached);
+      showOutput();
+      statusEl.textContent = 'Ready';
+      renderPoints(pts);
+      return;
+    }catch(e){}
+  }
+
+  const cap = getCaptured();
+  if(cap.length > 50){
+    showOutput();
+    statusEl.textContent = 'Captured. Tap “Get Insights”.';
   }else{
-    window.open("https://www.linkedin.com/","_blank");
+    showIntro();
   }
-};
-
-// ---------- Render ----------
-function renderPoints(arr){
-  pointsEl.innerHTML='';
-  if(!Array.isArray(arr)||!arr.length){
-    pointsEl.innerHTML='<li class="point">No insights returned from Worker.</li>';
-    return;
-  }
-  arr.forEach((p,i)=>{
-    const li=document.createElement('li');
-    li.className='point';
-    li.textContent=(i+1)+') '+(typeof p==='string'?p:(p.body||p.text||JSON.stringify(p)));
-    pointsEl.appendChild(li);
-  });
-}
-
-// ---------- Worker call ----------
-async function fetchInsights(text){
-  const res=await fetch(WORKER_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    // ✅ IMPORTANT FIX: send keys your Worker expects
-    body: JSON.stringify({
-      rawText: text,
-      profileText: text,
-      capturedText: text
-    })
-  });
-
-  const raw=await res.text();
-  if(!res.ok) throw new Error(raw.slice(0,400));
-
-  let data;
-  try{ data=JSON.parse(raw); }
-  catch(e){ throw new Error("Worker returned non JSON: "+raw.slice(0,300)); }
-
-  let pts=data.points ?? data.insights ?? data.result ?? data.output ?? data.message ?? data;
-
-  if(typeof pts==='string'){
-    pts=pts.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,7);
-  }
-  if(Array.isArray(pts) && pts.length && typeof pts[0]==='string'){
-    return pts.slice(0,7);
-  }
-  if(Array.isArray(pts)){
-    return pts.slice(0,7).map(x=> (typeof x==='string' ? x : (x.body||x.text||JSON.stringify(x))));
-  }
-  if(pts && typeof pts==='object'){
-    return [JSON.stringify(pts)];
-  }
-  return [];
-}
-
-// ---------- Get Insights ----------
-document.getElementById('insightsBtn').onclick=async()=>{
-  const text=getCaptured();
-  alert("Captured length: "+text.length);
-
-  if(text.length<50){
-    statusEl.textContent='No captured text found.';
-    return;
-  }
-
-  showOutput();
-  statusEl.textContent='Generating insights...';
-  try{
-    const pts=await fetchInsights(text);
-    statusEl.textContent='Ready';
-    renderPoints(pts);
-  }catch(e){
-    statusEl.textContent='Error: '+(e.message||e);
-    renderPoints([]);
-  }
-};
-
-// ---------- Boot ----------
-const existing=getCaptured();
-if(existing.length>50){
-  showOutput();
-}
 
 })();
 </script>
