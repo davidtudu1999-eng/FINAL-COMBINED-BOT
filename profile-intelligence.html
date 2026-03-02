@@ -25,6 +25,46 @@
     }
     *{box-sizing:border-box}
     html,body{height:100%}
+
+<script>
+(async function () {
+  try {
+    // 1) read worker url + captured text (app set karta hai)
+    const workerUrl = localStorage.getItem('pi_worker_url');
+    const captured = localStorage.getItem('pi_captured');
+
+    // 2) basic guards
+    if (!workerUrl) throw new Error("Worker URL missing (pi_worker_url)");
+    if (!captured || captured.length < 500) throw new Error("Captured text missing/too short");
+
+    // 3) call worker
+    const res = await fetch(workerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: captured })
+    });
+
+    const data = await res.json();
+
+    // 4) pick output key (change this based on your worker response)
+    const insightsText = data.insights || data.result || data.response || data.output || "";
+
+    if (!insightsText) throw new Error("No insights in worker response");
+
+    // 5) render in page (change selector to your output element)
+    const box = document.querySelector("#piOutput") || document.querySelector(".piOutput") || document.body;
+    box.innerText = insightsText;
+
+  } catch (e) {
+    console.error(e);
+    // fallback UI message (optional)
+    const box = document.querySelector("#piOutput") || document.querySelector(".piOutput");
+    if (box) box.innerText = "Could not generate insights.";
+  }
+})();
+</script>
+
+    
     body{
       margin:0;
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
