@@ -94,6 +94,28 @@ main{
   line-height:1.35;
 }
 .small{font-size:14px;color:var(--muted);font-weight:700;margin-top:10px;text-align:center}
+
+/* ✅ Floating Home button */
+#homeBtn{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 54px;
+  min-width: 110px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #20c05c, #0b8a77);
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 12px 28px rgba(0,0,0,.20);
+  border: 0;
+}
+#homeBtn:active{ transform: translateY(1px); }
 </style>
 </head>
 
@@ -338,6 +360,9 @@ main{
 
 })();
 </script>
+
+<!-- ✅ Home button -->
+<a id="homeBtn" href="index.html" aria-label="Home">Home</a>
 
 </body>
 </html>
