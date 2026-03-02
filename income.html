@@ -37,7 +37,7 @@
   .export-area{ display:flex; justify-content:center; align-items:center; padding:0; }
   @media print{ .actions{ display:none !important; } }
 </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
   <div class="header">Income Astrologer</div>
@@ -91,27 +91,14 @@
     window.scrollTo(0, document.body.scrollHeight);
   }
 
-  // --- Model (matches your screenshots closely; can be tuned later) ---
-  // Inputs:
-  // leadsY1: number
-  // meetingRate: percent (0-100)
-  // Assumptions (from screenshots):
-  // conversionRate = 30%
-  // high performer = 1.5x
-  // Base income per "sale" ≈ 0.19 LPA
-  // Growth curve multipliers for 5 years (renewal stacking effect)
+  // --- Model ---
   const CONV = 0.30;
   const INCOME_PER_SALE_LPA = 0.19;
   const MULT = [1.00, 1.50, 2.25, 2.75, 3.50]; // Year1..Year5
   const HIGH_MULT = 1.50;
-  // Fixed chart ceiling so different scenarios are comparable
-  // Upper bound reference: ~400 leads & ~90% meeting rate gives ~₹111L high-performer by Year 5 in your sheet
   const Y_AXIS_MAX_LPA = 120;
 
-  function roundLpa(x){
-    // Excel-like feel: round to nearest whole L
-    return Math.round(x);
-  }
+  function roundLpa(x){ return Math.round(x); }
 
   function estimate(leadsY1, meetingRatePct){
     const mr = Math.max(0, Math.min(100, meetingRatePct)) / 100;
@@ -128,14 +115,15 @@
     card.className = 'chartCard';
     card.innerHTML = `
       <div id="exportArea" class="exportArea">
-      <div class="chartTitle">Income Astrologer</div>
-      <div class="chartSub" id="chartSub"></div>
-      <div class="legend">
-        <span><span class="dot cyan"></span>Annual Income</span>
-        <span><span class="dot gold"></span>High Performer</span>
+        <div class="chartTitle">Income Astrologer</div>
+        <div class="chartSub" id="chartSub"></div>
+        <div class="legend">
+          <span><span class="dot cyan"></span>Annual Income</span>
+          <span><span class="dot gold"></span>High Performer</span>
+        </div>
+        <div id="svgWrap"></div>
       </div>
-      <div id="svgWrap"></div>
-    </div>
+
       <div id="actionRow" class="row" style="margin-top:14px;margin-bottom:4px;">
         <button class="btn" id="btnDownload">Download</button>
         <button class="btn" id="btnShare">Share</button>
@@ -153,7 +141,6 @@
     const W = 760, H = 320;
     const padL=40, padR=24, padT=20, padB=52;
 
-    const all = annual.concat(high);
     const maxV = Y_AXIS_MAX_LPA;
     const minV = 0;
 
@@ -264,14 +251,12 @@
     addSeries(high, 'var(--gold)', true);
 
     card.querySelector('#svgWrap').appendChild(svg);
-    // --- Export helpers (SVG -> PNG -> PDF) ---
+
+    // --- Export helpers (SVG -> PNG) ---
     function serializeSvg(s){
       const clone = s.cloneNode(true);
-      // Ensure embedded CSS vars resolve by inlining colors we used
-      // (we used stroke='var(--cyan)' etc. in earlier versions; now set to actual colors if present)
       clone.querySelectorAll('[stroke="var(--cyan)"]').forEach(el=>el.setAttribute('stroke', '#22c7f4'));
       clone.querySelectorAll('[stroke="var(--gold)"]').forEach(el=>el.setAttribute('stroke', '#f6b21a'));
-      // Add title/subtitle into SVG for export
       const t1 = document.createElementNS('http://www.w3.org/2000/svg','text');
       t1.setAttribute('x', W/2); t1.setAttribute('y', 34);
       t1.setAttribute('text-anchor','middle');
@@ -296,28 +281,6 @@
       return `<?xml version="1.0" encoding="UTF-8"?>\n` + xml;
     }
 
-    async function svgToPngDataUrl(scale=3){
-      const xml = serializeSvg(svg);
-      const blob = new Blob([xml], {type: 'image/svg+xml;charset=utf-8'});
-      const url = URL.createObjectURL(blob);
-      try{
-        const img = new Image();
-        img.decoding = 'async';
-        img.src = url;
-        await img.decode();
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(W * scale);
-        canvas.height = Math.round(H * scale);
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#0b1020';
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataURL('image/png');
-      } finally {
-        URL.revokeObjectURL(url);
-      }
-    }
-
     function nextPngFileName(){
       const safeName = (advisorName||'Advisor').trim() || 'Advisor';
       const key = 'ia_png_count_' + safeName.toLowerCase();
@@ -327,7 +290,6 @@
       return `${safeName} Ji ${suffix}.png`;
     }
 
-
     async function downloadPng(){
       const area = document.getElementById('exportArea');
       if(!area){ alert('Nothing to export yet.'); return; }
@@ -335,11 +297,16 @@
         alert('Export library failed to load. Please check internet connection once.');
         return;
       }
-      // Capture full output (excluding buttons because buttons are outside exportArea)
       const canvas = await html2canvas(area, {backgroundColor: '#0b1020', scale: 3, useCORS: true});
-      
-      if(__inApp()){ await __saveCanvasViaApp(canvas, nextPngFileName()); return; }
-const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
+
+      // ✅ Android WebView path
+      if(__inApp()){
+        await __downloadCanvasViaApp(canvas, nextPngFileName());
+        return;
+      }
+
+      // Web fallback
+      const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
       if(!blob){ alert('Could not generate image.'); return; }
 
       const fileName = nextPngFileName();
@@ -353,7 +320,6 @@ const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
       setTimeout(()=>URL.revokeObjectURL(url), 1500);
     }
 
-
     async function sharePng(){
       const area = document.getElementById('exportArea');
       if(!area){ alert('Nothing to share yet.'); return; }
@@ -362,14 +328,19 @@ const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
         return;
       }
       const canvas = await html2canvas(area, {backgroundColor: '#0b1020', scale: 3, useCORS: true});
-      
-      if(__inApp()){ await __shareCanvasViaApp(canvas, nextPngFileName(), 'Income Astrologer Output'); return; }
-const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
+
+      // ✅ Android WebView path
+      if(__inApp()){
+        await __shareCanvasViaApp(canvas, nextPngFileName());
+        return;
+      }
+
+      // Web fallback
+      const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
       if(!blob){ alert('Could not generate image.'); return; }
 
       const fileName = nextPngFileName();
 
-      // Web Share (Android Chrome supports it; WhatsApp shows up in share sheet)
       if(navigator.share && navigator.canShare){
         try{
           const file = new File([blob], fileName, {type:'image/png'});
@@ -391,13 +362,13 @@ const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
       setTimeout(()=>URL.revokeObjectURL(url), 1500);
       alert('Sharing is not supported on this browser. I downloaded the PNG instead.');
     }
+
     const bd = card.querySelector('#btnDownload');
     const bs = card.querySelector('#btnShare');
     if(bd) bd.onclick = ()=>downloadPng();
     if(bs) bs.onclick = ()=>sharePng();
 
-
-    // Table (optional, helps validation)
+    // Table (optional)
     const tbl = document.createElement('table');
     tbl.className='table';
     tbl.innerHTML = `
@@ -420,7 +391,7 @@ const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
           <th style="text-align:left;opacity:.95">Annual</th>
           ${annual.map(v=>`<td>₹${v}L</td>`).join('')}
         </tr>
-        </tbody>
+      </tbody>
     `;
     card.appendChild(tbl);
     window.scrollTo(0, document.body.scrollHeight);
@@ -436,7 +407,6 @@ const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
   // Ensure the opening message is visible on mobile
   window.scrollTo(0,0);
 
-  
   document.getElementById('go').onclick = ()=>{
     inputQ("1) Name of the Advisor?", "e.g., Ramesh", "text", name=>{
       const advisorName = String(name||'').trim();
@@ -454,23 +424,41 @@ const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
 </script>
 
 <script>
-/** === Android WebView helpers (share/download PNG) === **/
+/** === Android WebView helpers (share/download PNG) ===
+ *  Works with your MainActivity bridge:
+ *    Android.downloadBase64Png(dataUrl, fileName)
+ *    Android.shareBase64Png(dataUrl, fileName)
+ **/
 function __inApp(){
-  return (typeof Android !== 'undefined') && Android && (Android.shareBase64Png || Android.saveBase64Png);
+  return !!(window.Android &&
+            (typeof Android.downloadBase64Png === 'function' || typeof Android.shareBase64Png === 'function'));
 }
-async function __canvasToBase64Png(canvas){
-  const dataUrl = canvas.toDataURL('image/png');
-  return dataUrl.split(',')[1] || '';
+
+async function __canvasToPngDataUrl(canvas){
+  // FULL dataURL (important: Android code extracts base64 after "base64,")
+  return canvas.toDataURL('image/png');
 }
-async function __shareCanvasViaApp(canvas, filename, title){
-  const b64 = await __canvasToBase64Png(canvas);
-  if(!b64) throw new Error('empty');
-  if(Android.shareBase64Png) Android.shareBase64Png(b64, filename || 'income-astrologer-output.png', title || '');
+
+async function __shareCanvasViaApp(canvas, filename){
+  const dataUrl = await __canvasToPngDataUrl(canvas);
+  if(window.Android && typeof Android.shareBase64Png === 'function'){
+    Android.shareBase64Png(dataUrl, filename || 'income-astrologer-output.png');
+  } else {
+    throw new Error('Android.shareBase64Png not available');
+  }
 }
-async function __saveCanvasViaApp(canvas, filename){
-  const b64 = await __canvasToBase64Png(canvas);
-  if(!b64) throw new Error('empty');
-  if(Android.saveBase64Png) Android.saveBase64Png(b64, filename || 'income-astrologer-output.png');
+
+async function __downloadCanvasViaApp(canvas, filename){
+  const dataUrl = await __canvasToPngDataUrl(canvas);
+  if(window.Android && typeof Android.downloadBase64Png === 'function'){
+    Android.downloadBase64Png(dataUrl, filename || 'income-astrologer-output.png');
+  } else if(window.Android && typeof Android.savePngBase64 === 'function'){
+    // backup compatibility: if you still use savePngBase64(base64Only)
+    const b64 = dataUrl.split(',')[1] || '';
+    Android.savePngBase64(filename || 'income-astrologer-output.png', b64);
+  } else {
+    throw new Error('Android.downloadBase64Png not available');
+  }
 }
 </script>
 
