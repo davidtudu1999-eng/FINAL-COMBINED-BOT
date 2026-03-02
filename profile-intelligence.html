@@ -482,7 +482,8 @@
       insightsBtn.addEventListener('click', async () => {
         // Try to pull fresh capture from Android (if available)
         const fresh = pullCapturedTextFromAndroidIfAny();
-        const cap = fresh || localStorage.getItem('pi_captured') || '';alert("Captured length: " + cap.length);
+        const cap = fresh || localStorage.getItem('pi_captured') || '';
+        alert("Captured length: " + cap.length);
 
         if(cap.length < 50){
           statusEl.textContent = 'No captured text yet. Open LinkedIn profile and scroll.';
