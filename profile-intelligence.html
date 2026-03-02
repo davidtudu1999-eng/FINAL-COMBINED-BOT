@@ -3,28 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
     <title>Profile Intelligence</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>User Profile Intelligence</h1>
-        <script>
-            function getUserData() {
-                // Fetch user data from API
-                return fetch('https://api.example.com/user')
-                    .then(response => response.json())
-                    .then(data => {
-                        // Process data
-                    });
-            }
-        </script>
-        <!-- Other content goes here -->
-        <script>
-            function exampleFunction() {
-                return [];  // Fixed syntax error on line 431
-            }
-        </script>
-    </div>
+    <header>
+        <h1>Profile Intelligence</h1>
+        <button id="theme-toggle">Toggle Dark/Light Theme</button>
+    </header>
+    <main>
+        <section id="intro">
+            <h2>Intro Card</h2>
+            <button id="start-btn">Let's Go!!</button>
+        </section>
+        <section id="output">
+            <h2>Insights</h2>
+            <div id="insights-display"></div>
+        </section>
+    </main>
+    <script>
+        document.getElementById('theme-toggle').addEventListener('click', function() {
+            document.body.classList.toggle('dark-theme');
+        });
+
+        document.getElementById('start-btn').addEventListener('click', function() {
+            generateInsightsFromCapturedText();
+        });
+
+        function generateInsightsFromCapturedText() {
+            // Function logic here
+            return []; // Fixed syntax error
+        }
+    </script>
 </body>
 </html>
