@@ -177,7 +177,7 @@ function renderPoints(arr){
   arr.forEach((p,i)=>{
     const li=document.createElement('li');
     li.className='point';
-    li.textContent=(i+1)+') '+(typeof p==='string'?p:(p.body||JSON.stringify(p)));
+    li.textContent=(i+1)+') '+(typeof p==='string'?p:(p.body||p.text||JSON.stringify(p)));
     pointsEl.appendChild(li);
   });
 }
@@ -187,28 +187,48 @@ async function fetchInsights(text){
   const res=await fetch(WORKER_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({capturedText:text})
+    // ✅ IMPORTANT FIX: send keys your Worker expects
+    body: JSON.stringify({
+      rawText: text,
+      profileText: text,
+      capturedText: text
+    })
   });
+
   const raw=await res.text();
-  if(!res.ok) throw new Error(raw.slice(0,200));
+  if(!res.ok) throw new Error(raw.slice(0,400));
+
   let data;
-  try{ data=JSON.parse(raw);}catch(e){ throw new Error("Worker returned non JSON: "+raw.slice(0,200)); }
-  let pts=data.points??data.insights??data.result??data.output??data.message??data;
+  try{ data=JSON.parse(raw); }
+  catch(e){ throw new Error("Worker returned non JSON: "+raw.slice(0,300)); }
+
+  let pts=data.points ?? data.insights ?? data.result ?? data.output ?? data.message ?? data;
+
   if(typeof pts==='string'){
-    pts=pts.split('\n').filter(Boolean).slice(0,7);
+    pts=pts.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,7);
   }
-  if(!Array.isArray(pts)) pts=[JSON.stringify(pts)];
-  return pts.slice(0,7);
+  if(Array.isArray(pts) && pts.length && typeof pts[0]==='string'){
+    return pts.slice(0,7);
+  }
+  if(Array.isArray(pts)){
+    return pts.slice(0,7).map(x=> (typeof x==='string' ? x : (x.body||x.text||JSON.stringify(x))));
+  }
+  if(pts && typeof pts==='object'){
+    return [JSON.stringify(pts)];
+  }
+  return [];
 }
 
 // ---------- Get Insights ----------
 document.getElementById('insightsBtn').onclick=async()=>{
   const text=getCaptured();
   alert("Captured length: "+text.length);
+
   if(text.length<50){
     statusEl.textContent='No captured text found.';
     return;
   }
+
   showOutput();
   statusEl.textContent='Generating insights...';
   try{
@@ -216,7 +236,8 @@ document.getElementById('insightsBtn').onclick=async()=>{
     statusEl.textContent='Ready';
     renderPoints(pts);
   }catch(e){
-    statusEl.textContent='Error: '+e.message;
+    statusEl.textContent='Error: '+(e.message||e);
+    renderPoints([]);
   }
 };
 
