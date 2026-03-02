@@ -398,29 +398,58 @@
         }catch(e){}
       };
 
-      async function generateInsightsFromCapturedText(capturedText){
-        const workerUrl = getWorkerUrl();
+  async function generateInsightsFromCapturedText(capturedText){
+  const workerUrl = getWorkerUrl();
 
-        const res = await fetch(workerUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ capturedText })
-        });
+  const res = await fetch(workerUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ capturedText })
+  });
 
-        if(!res.ok){
-          const t = await res.text().catch(()=> '');
-          throw new Error('Worker error ' + res.status + ': ' + t);
-        }
+  const raw = await res.text(); // <-- read raw text first
 
-        const data = await res.json();
+  if(!res.ok){
+    throw new Error(`Worker HTTP ${res.status}. Body: ${raw.slice(0, 300)}`);
+  }
 
-        // Accept multiple common shapes:
-        // 1) { points: [ {title, body}, ... ] }
-        // 2) { points: ["...", "..."] }
-        // 3) { insights: [...] }
-        const pts = data.points || data.insights || data.result || [];
-        return pts;
-      }
+  let data;
+  try{
+    data = JSON.parse(raw);
+  }catch(e){
+    throw new Error(`Worker did not return JSON. Body: ${raw.slice(0, 300)}`);
+  }
+
+  // --- Accept MANY shapes ---
+  // A) { points: [...] }
+  // B) { insights: [...] }
+  // C) { insights: "...." }  -> convert to bullets
+  // D) { result: ... }
+  let pts = data.points ?? data.insights ?? data.result ?? data;
+
+  // If it's a single string, convert to bullets
+  if(typeof pts === 'string'){
+    const lines = pts.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 7);
+    return lines.map((t,i)=>({ title: `Insight ${i+1}`, body: t }));
+  }
+
+  // If it's an object like { insights: { ... } }, stringify it
+  if(pts && !Array.isArray(pts) && typeof pts === 'object'){
+    return [{ title: 'Insights', body: JSON.stringify(pts) }];
+  }
+
+  // If it's an array of strings, normalize
+  if(Array.isArray(pts) && pts.length && typeof pts[0] === 'string'){
+    return pts.slice(0, 7).map((t,i)=>({ title: `Insight ${i+1}`, body: t }));
+  }
+
+  // If array of objects, keep (limit 7)
+  if(Array.isArray(pts)){
+    return pts.slice(0, 7);
+  }
+
+  return [];
+}
 
       // ---------- Views ----------
       const introCard = document.getElementById('introCard');
