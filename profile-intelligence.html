@@ -358,7 +358,7 @@
         try{
           if(window.Android && typeof Android.getCapturedProfileText === 'function'){
             const t = Android.getCapturedProfileText() || '';
-            if(t && t.length > 50){
+            if(t && t.length > 2500){
               localStorage.setItem('pi_captured', t);
               return t;
             }
