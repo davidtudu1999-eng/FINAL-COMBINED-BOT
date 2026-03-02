@@ -1,594 +1,233 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Profile Intelligence</title>
-  <style>
-    :root{
-      --wa:#075E54;
-      --bg:#e5ddd5;
-      --card:#ffffff;
-      --text:#0f172a;
-      --muted:#64748b;
-      --btn1:#22c55e;
-      --btn2:#0ea5a0;
-      --shadow:0 10px 30px rgba(0,0,0,.12);
-    }
-    body.dark{
-      --bg:#0b1220;
-      --card:#0f1a2c;
-      --text:#f8fafc;
-      --muted:#94a3b8;
-      --shadow:0 10px 30px rgba(0,0,0,.35);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:var(--bg);
-      color:var(--text);
-    }
-    header{
-      background:var(--wa);
-      color:#fff;
-      padding:22px 18px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      box-shadow:0 2px 10px rgba(0,0,0,.18);
-    }
-    header h1{
-      margin:0;
-      font-size:40px;
-      letter-spacing:.2px;
-      font-weight:800;
-    }
-    .toggle{
-      border:2px solid rgba(255,255,255,.6);
-      background:transparent;
-      color:#fff;
-      border-radius:999px;
-      padding:12px 22px;
-      font-weight:800;
-      font-size:18px;
-      cursor:pointer;
-    }
-    main{
-      max-width:980px;
-      margin:34px auto;
-      padding:0 16px 40px;
-    }
-    .card{
-      background:var(--card);
-      border-radius:26px;
-      box-shadow:var(--shadow);
-      padding:30px 24px;
-    }
-    .card h2{
-      margin:0 0 10px;
-      font-size:34px;
-      line-height:1.15;
-      font-weight:900;
-    }
-    .card p{
-      margin:8px 0 0;
-      font-size:20px;
-      line-height:1.35;
-      color:var(--muted);
-      font-weight:600;
-    }
-    .ctaWrap{display:flex; justify-content:center; margin:26px 0 14px;}
-    .cta{
-      border:none;
-      border-radius:999px;
-      padding:18px 48px;
-      font-size:30px;
-      font-weight:900;
-      color:#fff;
-      background:linear-gradient(90deg,var(--btn1),var(--btn2));
-      box-shadow:0 18px 30px rgba(14,165,160,.25);
-      min-width:min(520px, 90%);
-      cursor:pointer;
-    }
-    .cta:active{transform:translateY(1px)}
-    .smallNote{
-      text-align:center;
-      margin-top:8px;
-      color:var(--muted);
-      font-weight:800;
-    }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Profile Intelligence</title>
 
-    /* Output */
-    .outTitle{
-      font-size:34px;
-      font-weight:950;
-      margin:0 0 12px;
-    }
-    .points{
-      margin:14px 0 0;
-      padding:0;
-      list-style:none;
-      display:grid;
-      gap:10px;
-    }
-    .point{
-      border-radius:16px;
-      padding:14px 16px;
-      background:rgba(34,197,94,.10);
-      border:1px solid rgba(34,197,94,.25);
-      font-size:18px;
-      font-weight:800;
-      line-height:1.3;
-    }
-    body.dark .point{
-      background:rgba(34,197,94,.12);
-      border:1px solid rgba(34,197,94,.25);
-    }
-    .barRow{
-      display:flex;
-      gap:10px;
-      justify-content:center;
-      margin-top:18px;
-      flex-wrap:wrap;
-    }
-    .miniBtn{
-      border:none;
-      border-radius:999px;
-      padding:14px 22px;
-      font-weight:900;
-      font-size:18px;
-      color:#fff;
-      background:linear-gradient(90deg,var(--btn1),var(--btn2));
-      min-width:160px;
-      cursor:pointer;
-    }
-    .status{
-      margin-top:10px;
-      text-align:center;
-      font-weight:800;
-      color:var(--muted);
-    }
-
-    /* Capture overlay in app (optional) */
-    .overlay{
-      position:fixed;
-      inset:0;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      pointer-events:none;
-    }
-    .overlay.show{display:flex}
-    .overlayBox{
-      width:min(80vw,520px);
-      text-align:center;
-    }
-    .toast{
-      display:inline-block;
-      background:rgba(0,0,0,.65);
-      color:#fff;
-      padding:10px 14px;
-      border-radius:12px;
-      font-weight:900;
-      margin-bottom:10px;
-    }
-    .pbar{
-      height:56px;
-      background:#fff;
-      border-radius:12px;
-      overflow:hidden;
-      position:relative;
-      border:1px solid rgba(0,0,0,.12);
-    }
-    body.dark .pbar{background:#0b1220;border-color:rgba(255,255,255,.12)}
-    .pfill{
-      height:100%;
-      width:0%;
-      background:#16a34a;
-      transition:width .25s ease;
-    }
-    .ppct{
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:950;
-      font-size:20px;
-      color:#111827;
-    }
-    body.dark .ppct{color:#e5e7eb}
-    .keep{
-      margin-top:10px;
-      display:inline-block;
-      background:#fff;
-      padding:8px 12px;
-      border-radius:10px;
-      font-weight:900;
-      color:#111827;
-    }
-    body.dark .keep{background:#0f1a2c;color:#e5e7eb;border:1px solid rgba(255,255,255,.12)}
-
-    /* Floating Home button (always visible) */
-    #homeBtn{
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 9999;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      height: 54px;
-      min-width: 110px;
-      padding: 0 22px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #20c05c, #0b8a77);
-      color: #fff;
-      font-weight: 800;
-      text-decoration: none;
-      box-shadow: 0 12px 28px rgba(0,0,0,.20);
-      border: 0;
-    }
-    #homeBtn:active{ transform: translateY(1px); }
-
-    .ptTitle{font-weight:900; font-size:18px; letter-spacing:0.2px;}
-    .ptBody{margin-top:8px; font-weight:650; font-size:15px; line-height:1.35; opacity:0.95;}
-  </style>
+<style>
+:root{
+  --wa:#075E54;
+  --bg:#e5ddd5;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --btn1:#22c55e;
+  --btn2:#0ea5a0;
+}
+body.dark{
+  --bg:#0b1220;
+  --card:#0f1a2c;
+  --text:#f8fafc;
+  --muted:#94a3b8;
+}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+header{
+  background:var(--wa);
+  color:#fff;
+  padding:20px;
+  display:flex;
+  justify-content:space-between;
+}
+header h1{margin:0;font-size:34px;}
+.toggle{
+  border:2px solid #fff;
+  background:transparent;
+  color:#fff;
+  border-radius:999px;
+  padding:8px 18px;
+  font-weight:800;
+  cursor:pointer;
+}
+main{
+  max-width:900px;
+  margin:30px auto;
+  padding:0 16px 40px;
+}
+.card{
+  background:var(--card);
+  border-radius:20px;
+  padding:26px;
+}
+.cta{
+  border:none;
+  border-radius:999px;
+  padding:16px 40px;
+  font-size:22px;
+  font-weight:900;
+  color:#fff;
+  background:linear-gradient(90deg,var(--btn1),var(--btn2));
+  cursor:pointer;
+}
+.status{
+  margin-top:10px;
+  text-align:center;
+  font-weight:800;
+  color:var(--muted);
+}
+.points{
+  margin-top:16px;
+  list-style:none;
+  padding:0;
+}
+.point{
+  background:rgba(34,197,94,.12);
+  padding:14px;
+  border-radius:14px;
+  margin-bottom:10px;
+  font-weight:700;
+}
+</style>
 </head>
+
 <body>
-  <header>
-    <h1>Profile Intelligence</h1>
-    <button class="toggle" id="toggleBtn" type="button">Dark</button>
-  </header>
 
-  <main>
-    <!-- Instruction View -->
-    <section class="card" id="introCard" style="display:none">
-      <h2>Let’s first visit the client’s LinkedIn<br/>profile.</h2>
-      <p>Once you open the profile, scroll a bit. The app will auto-capture content and enable insights.</p>
+<header>
+  <h1>Profile Intelligence</h1>
+  <button class="toggle" id="toggleBtn">Dark</button>
+</header>
 
-      <div class="ctaWrap">
-        <button class="cta" id="goBtn" type="button">Let’s Go!!</button>
-      </div>
+<main>
 
-      <div class="smallNote">App mode is required for auto capture.</div>
-    </section>
+<section class="card" id="introCard">
+  <h2>Visit the client’s LinkedIn profile.</h2>
+  <p>Scroll a bit after opening. Then come back and tap Get Insights.</p>
+  <br/>
+  <button class="cta" id="goBtn">Let’s Go!!</button>
+</section>
 
-    <!-- Output View -->
-    <section class="card" id="outCard" style="display:none">
-      <div class="outTitle">Profile Intelligence</div>
+<section class="card" id="outCard" style="display:none;">
+  <button class="cta" id="insightsBtn">Get Insights</button>
+  <div class="status" id="status">Open LinkedIn profile and scroll.</div>
+  <ul class="points" id="points"></ul>
+</section>
 
-      <div class="ctaWrap" style="margin:14px 0 6px;">
-        <button class="cta" id="insightsBtn" type="button" style="font-size:26px;min-width:min(520px,90%);">
-          Get Insights
-        </button>
-      </div>
+</main>
 
-      <div class="status" id="status">Open LinkedIn profile, scroll a bit, then tap “Get Insights”.</div>
-      <ul class="points" id="points"></ul>
+<script>
+(function(){
 
-      <div class="barRow" id="actions" style="display:none">
-        <button class="miniBtn" id="downloadBtn" type="button">Download</button>
-        <button class="miniBtn" id="shareBtn" type="button">Share</button>
-      </div>
-    </section>
-  </main>
+// ---------- Theme ----------
+const body = document.body;
+const toggleBtn = document.getElementById('toggleBtn');
+function applyTheme(t){
+  body.classList.toggle('dark', t==='dark');
+  localStorage.setItem('theme',t);
+  toggleBtn.textContent = t==='dark'?'Light':'Dark';
+}
+applyTheme(localStorage.getItem('theme')||'light');
+toggleBtn.onclick=()=>applyTheme(body.classList.contains('dark')?'light':'dark');
 
-  <!-- Optional capture overlay (Android can toggle with JS) -->
-  <div class="overlay" id="capOverlay" aria-hidden="true">
-    <div class="overlayBox">
-      <div class="toast" id="capToast">Kindly scroll…</div>
-      <div class="pbar">
-        <div class="pfill" id="capFill"></div>
-        <div class="ppct" id="capPct">0%</div>
-      </div>
-      <div class="keep" id="capKeep">Keep scrolling…</div>
-    </div>
-  </div>
+// ---------- Worker URL ----------
+const WORKER_URL="https://dry-fire-c28e.davidtudu1999.workers.dev";
 
-  <script>
-    (function(){
-
-      // ---------- Force start screen (fresh open) ----------
-      // If profile-intelligence is opened with ?start=1, clear any previous captured data
-      try{
-        const __url = new URL(window.location.href);
-        const __forceStart = __url.searchParams.get('start') === '1';
-        if(__forceStart){
-          localStorage.removeItem('pi_captured');
-          localStorage.removeItem('pi_started');
-          localStorage.removeItem('pi_url');
-          localStorage.removeItem('pi_points');
-          // Remove query so refresh/back doesn't re-clear unexpectedly
-          __url.searchParams.delete('start');
-          history.replaceState({}, document.title, __url.toString());
-        }
-      }catch(e){}
-
-      // ---------- Theme ----------
-      const body = document.body;
-      const toggleBtn = document.getElementById('toggleBtn');
-
-      function applyTheme(t){
-        body.classList.toggle('dark', t === 'dark');
-        localStorage.setItem('theme', t);
-        toggleBtn.textContent = (t === 'dark') ? 'Light' : 'Dark';
-      }
-      applyTheme(localStorage.getItem('theme') || 'light');
-      toggleBtn.addEventListener('click', () => {
-        const t = body.classList.contains('dark') ? 'light' : 'dark';
-        applyTheme(t);
-      });
-
-      // ---------- Worker + Android Bridge ----------
-      // You can override from console: localStorage.setItem('pi_worker_url','https://YOUR_WORKER_URL');
-      const DEFAULT_WORKER_URL = "https://dry-fire-c28e.davidtudu1999.workers.dev";
-
-      function getWorkerUrl(){
-        try{
-          const fromLs = (localStorage.getItem('pi_worker_url') || '').trim();
-          if(fromLs) return fromLs;
-        }catch(e){}
-        return DEFAULT_WORKER_URL;
-      }
-
-      function startLinkedInCapture(){
-        // Preferred: LinkedIn APP + Accessibility overlay (Android)
-        try{
-          if(window.Android && typeof Android.startLinkedInCapture === 'function'){
-            Android.startLinkedInCapture();
-            return true;
-          }
-        }catch(e){}
-        // Fallback: open LinkedIn in WebView
-        try{
-          if(window.Android && typeof Android.openLinkedIn === 'function'){
-            Android.openLinkedIn();
-            return true;
-          }
-        }catch(e){}
-        // Browser fallback
-        window.location.href = "https://www.linkedin.com/";
-        return true;
-      }
-
-      function pullCapturedTextFromAndroidIfAny(){
-        try{
-          if(window.Android && typeof Android.getCapturedProfileText === 'function'){
-            const t = Android.getCapturedProfileText() || '';
-            if(t && t.length > 2500){
-              localStorage.setItem('pi_captured', t);
-              return t;
-            }
-          }
-        }catch(e){}
-        return '';
-      }
-
-      // Android WebView can call this to inject captured LinkedIn text.
-      // It stores into localStorage and does not force reload (we can stay on output view).
-      window.PI_setCapturedText = function(text){
-        try{
-          if(typeof text !== 'string') text = String(text||'');
-          localStorage.setItem('pi_captured', text);
-          localStorage.removeItem('pi_points');
-          // Update UI hint immediately
-          statusEl.textContent = 'Captured. Tap “Get Insights”.';
-          showOutput();
-        }catch(e){}
-      };
-
-      // Optional: Android can show overlay progress
-      window.PI_showCaptureOverlay = function(show){
-        try{
-          const ov = document.getElementById('capOverlay');
-          if(!ov) return;
-          ov.classList.toggle('show', !!show);
-        }catch(e){}
-      };
-      window.PI_setCaptureProgress = function(pct){
-        try{
-          const v = Math.max(0, Math.min(100, Number(pct)||0));
-          const fill = document.getElementById('capFill');
-          const txt  = document.getElementById('capPct');
-          if(fill) fill.style.width = v + '%';
-          if(txt) txt.textContent = v + '%';
-        }catch(e){}
-      };
-
-async function generateInsightsFromCapturedText(capturedText){
-  const workerUrl = getWorkerUrl();
-
-  const res = await fetch(workerUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ capturedText })
-  });
-
-  const raw = await res.text();
-
-  if(!res.ok){
-    throw new Error(`Worker HTTP ${res.status}. Body: ${raw.slice(0, 300)}`);
-  }
-
-  let data;
+// ---------- Android capture getter ----------
+function getCaptured(){
   try{
-    data = JSON.parse(raw);
+    if(window.Android && Android.getCapturedProfileText){
+      const t=Android.getCapturedProfileText()||'';
+      if(t.length>100){
+        localStorage.setItem('pi_captured',t);
+        return t;
+      }
+    }
+  }catch(e){}
+  return localStorage.getItem('pi_captured')||'';
+}
+
+// Android injection support
+window.PI_setCapturedText=function(text){
+  localStorage.setItem('pi_captured',text||'');
+  showOutput();
+  document.getElementById('status').textContent='Captured. Tap Get Insights.';
+};
+
+// ---------- Views ----------
+const intro=document.getElementById('introCard');
+const out=document.getElementById('outCard');
+const statusEl=document.getElementById('status');
+const pointsEl=document.getElementById('points');
+
+function showOutput(){
+  intro.style.display='none';
+  out.style.display='';
+}
+
+// ---------- Open LinkedIn ----------
+document.getElementById('goBtn').onclick=()=>{
+  if(window.Android && Android.startLinkedInCapture){
+    Android.startLinkedInCapture();
+  }else{
+    window.open("https://www.linkedin.com/","_blank");
+  }
+};
+
+// ---------- Render ----------
+function renderPoints(arr){
+  pointsEl.innerHTML='';
+  if(!Array.isArray(arr)||!arr.length){
+    pointsEl.innerHTML='<li class="point">No insights returned from Worker.</li>';
+    return;
+  }
+  arr.forEach((p,i)=>{
+    const li=document.createElement('li');
+    li.className='point';
+    li.textContent=(i+1)+') '+(typeof p==='string'?p:(p.body||JSON.stringify(p)));
+    pointsEl.appendChild(li);
+  });
+}
+
+// ---------- Worker call ----------
+async function fetchInsights(text){
+  const res=await fetch(WORKER_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({capturedText:text})
+  });
+  const raw=await res.text();
+  if(!res.ok) throw new Error(raw.slice(0,200));
+  let data;
+  try{ data=JSON.parse(raw);}catch(e){ throw new Error("Worker returned non JSON: "+raw.slice(0,200)); }
+  let pts=data.points??data.insights??data.result??data.output??data.message??data;
+  if(typeof pts==='string'){
+    pts=pts.split('\n').filter(Boolean).slice(0,7);
+  }
+  if(!Array.isArray(pts)) pts=[JSON.stringify(pts)];
+  return pts.slice(0,7);
+}
+
+// ---------- Get Insights ----------
+document.getElementById('insightsBtn').onclick=async()=>{
+  const text=getCaptured();
+  alert("Captured length: "+text.length);
+  if(text.length<50){
+    statusEl.textContent='No captured text found.';
+    return;
+  }
+  showOutput();
+  statusEl.textContent='Generating insights...';
+  try{
+    const pts=await fetchInsights(text);
+    statusEl.textContent='Ready';
+    renderPoints(pts);
   }catch(e){
-    throw new Error(`Worker did not return JSON. Body: ${raw.slice(0, 300)}`);
+    statusEl.textContent='Error: '+e.message;
   }
+};
 
-  let pts = data.points ?? data.insights ?? data.result ?? data.output ?? data.message ?? data;
-
-  // string -> bullets
-  if (typeof pts === 'string') {
-    const lines = pts.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 7);
-    return lines.map((t, i) => ({ title: `Insight ${i + 1}`, body: t }));
-  }
-
-  // array of strings -> objects
-  if (Array.isArray(pts) && pts.length && typeof pts[0] === 'string') {
-    return pts.slice(0, 7).map((t, i) => ({ title: `Insight ${i + 1}`, body: t }));
-  }
-
-  // array of objects -> keep
-  if (Array.isArray(pts)) return pts.slice(0, 7);
-
-  // object -> stringify
-  if (pts && typeof pts === 'object') {
-    return [{ title: 'Insights', body: JSON.stringify(pts) }];
-  }
-
-  return [];
+// ---------- Boot ----------
+const existing=getCaptured();
+if(existing.length>50){
+  showOutput();
 }
 
-  // --- Accept MANY shapes ---
-  // A) { points: [...] }
-  // B) { insights: [...] }
-  // C) { insights: "...." }  -> convert to bullets
-  // D) { result: ... }
-  let pts = data.points ?? data.insights ?? data.result ?? data;
+})();
+</script>
 
-  // If it's a single string, convert to bullets
-  if(typeof pts === 'string'){
-    const lines = pts.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 7);
-    return lines.map((t,i)=>({ title: `Insight ${i+1}`, body: t }));
-  }
-
-  // If it's an object like { insights: { ... } }, stringify it
-  if(pts && !Array.isArray(pts) && typeof pts === 'object'){
-    return [{ title: 'Insights', body: JSON.stringify(pts) }];
-  }
-
-  // If it's an array of strings, normalize
-  if(Array.isArray(pts) && pts.length && typeof pts[0] === 'string'){
-    return pts.slice(0, 7).map((t,i)=>({ title: `Insight ${i+1}`, body: t }));
-  }
-
-  // If array of objects, keep (limit 7)
-  if(Array.isArray(pts)){
-    return pts.slice(0, 7);
-  }
-
-  return [];
-}
-
-      // ---------- Views ----------
-      const introCard = document.getElementById('introCard');
-      const outCard   = document.getElementById('outCard');
-      const statusEl  = document.getElementById('status');
-      const pointsEl  = document.getElementById('points');
-      const actions   = document.getElementById('actions');
-      const insightsBtn = document.getElementById('insightsBtn');
-
-      function showIntro(){
-        introCard.style.display = '';
-        outCard.style.display = 'none';
-      }
-      function showOutput(){
-        introCard.style.display = 'none';
-        outCard.style.display = '';
-      }
-
-      // ---------- LinkedIn open ----------
-      document.getElementById('goBtn').addEventListener('click', () => {
-        startLinkedInCapture();
-      });
-
-      // ---------- Render points ----------
-      function renderPoints(points){
-        pointsEl.innerHTML = '';
-        if(!Array.isArray(points) || points.length === 0){
-          pointsEl.innerHTML = '<li class="point">No insights yet. Open the LinkedIn profile, scroll a bit, then tap <b>Get Insights</b>.</li>';
-          return;
-        }
-        points.forEach((p, idx) => {
-          const title = (p && typeof p === 'object') ? (p.title || ('Point ' + (idx+1))) : ('Point ' + (idx+1));
-          const body  = (p && typeof p === 'object') ? (p.body || p.text || '') : String(p || '');
-
-          const li = document.createElement('li');
-          li.className = 'point';
-
-          const t = document.createElement('div');
-          t.className = 'ptTitle';
-          t.textContent = (idx+1) + ') ' + title;
-
-          li.appendChild(t);
-
-          if(body && body.trim().length){
-            const b = document.createElement('div');
-            b.className = 'ptBody';
-            b.textContent = body;
-            li.appendChild(b);
-          }
-
-          pointsEl.appendChild(li);
-        });
-
-        // Show actions if you later implement download/share
-        // actions.style.display = '';
-      }
-
-      // ---------- Get Insights button ----------
-      insightsBtn.addEventListener('click', async () => {
-        // Try to pull fresh capture from Android (if available)
-        const fresh = pullCapturedTextFromAndroidIfAny();
-        const cap = fresh || localStorage.getItem('pi_captured') || '';
-        alert("Captured length: " + cap.length);
-
-        if(cap.length < 50){
-          statusEl.textContent = 'No captured text yet. Open LinkedIn profile and scroll.';
-          renderPoints([]);
-          return;
-        }
-
-        statusEl.textContent = 'Preparing insights…';
-        pointsEl.innerHTML = '';
-        try{
-          const points = await generateInsightsFromCapturedText(cap);
-          localStorage.setItem('pi_points', JSON.stringify(points));
-          statusEl.textContent = 'Ready';
-          renderPoints(points);
-        }catch(e){
-          statusEl.textContent = 'Could not generate insights.';
-          renderPoints([]);
-        }
-      });
-
-      // ---------- Boot ----------
-      async function boot(){
-        const cachedPoints = localStorage.getItem('pi_points');
-        const captured = localStorage.getItem('pi_captured');
-
-        // If Android already has captured text and exposes getter, pull once on load.
-        const fresh = pullCapturedTextFromAndroidIfAny();
-        const cap = fresh || captured || '';
-
-        if (cachedPoints){
-          try{
-            showOutput();
-            statusEl.textContent = 'Ready';
-            renderPoints(JSON.parse(cachedPoints));
-            return;
-          }catch(e){}
-        }
-
-        if (!cap){
-          showIntro();
-          return;
-        }
-
-        showOutput();
-        statusEl.textContent = 'Captured. Tap “Get Insights”.';
-        renderPoints([]);
-      }
-
-      boot();
-    })();
-  </script>
-
-  <a id="homeBtn" href="index.html" aria-label="Home">Home</a>
 </body>
 </html>
