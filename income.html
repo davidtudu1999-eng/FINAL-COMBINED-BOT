@@ -28,13 +28,10 @@
   .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
   .dot.cyan{background:var(--cyan)}
   .dot.gold{background:var(--gold)}
-  .note{font-size:12.5px;opacity:.85;margin-top:8px;text-align:center}
   .table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13.5px}
   .table th,.table td{padding:10px 8px;border-top:1px solid rgba(255,255,255,.12);text-align:center}
   .table th{opacity:.9;font-weight:900}
   .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.10);font-weight:900}
-
-  .export-area{ display:flex; justify-content:center; align-items:center; padding:0; }
   @media print{ .actions{ display:none !important; } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -94,9 +91,14 @@
   // --- Model ---
   const CONV = 0.30;
   const INCOME_PER_SALE_LPA = 0.19;
-  const MULT = [1.00, 1.50, 2.25, 2.75, 3.50]; // Year1..Year5
+  const MULT = [1.00, 1.50, 2.25, 2.75, 3.50];
   const HIGH_MULT = 1.50;
-  const Y_AXIS_MAX_LPA = 120;
+
+  // ✅ UPDATED per your request
+  const Y_AXIS_MAX_LPA = 126;
+
+  // ✅ NEW: adds visual gap above x-axis for small incomes
+  const Y_PAD_LPA = 12;
 
   function roundLpa(x){ return Math.round(x); }
 
@@ -131,25 +133,26 @@
     `;
     app.appendChild(card);
 
-    // Subtitle
     const sub = card.querySelector('#chartSub');
     if(sub){
       const safeName = (advisorName||'').trim();
       sub.textContent = safeName ? `${safeName} Ji's Income Potential` : ``;
     }
 
-    const W = 760, H = 320;
+    // ✅ UPDATED: bigger chart area (height increased)
+    const W = 760, H = 380;
+
     const padL=40, padR=24, padT=20, padB=52;
 
+    // ✅ UPDATED: allow some "below zero" space so small values float up
     const maxV = Y_AXIS_MAX_LPA;
-    const minV = 0;
+    const minV = -Y_PAD_LPA;
 
     const x = (i)=> padL + (W-padL-padR) * (i/4);
     const y = (v)=> padT + (H-padT-padB) * (1 - (v-minV)/(maxV-minV));
 
     const points = (arr)=> arr.map((v,i)=> `${x(i)},${y(v)}`).join(' ');
 
-    // star marker path (simple 8-ray)
     function starPath(cx, cy, r1, r2){
       const rays = 8;
       let d = '';
@@ -168,7 +171,6 @@
     svg.setAttribute('width','100%');
     svg.setAttribute('height','auto');
 
-    // background subtle stars
     const bg = document.createElementNS(svg.namespaceURI,'rect');
     bg.setAttribute('x','0'); bg.setAttribute('y','0'); bg.setAttribute('width',W); bg.setAttribute('height',H);
     bg.setAttribute('fill','#0b1020');
@@ -183,7 +185,6 @@
       svg.appendChild(c);
     }
 
-    // axis baseline
     const baseLine = document.createElementNS(svg.namespaceURI,'line');
     baseLine.setAttribute('x1', padL);
     baseLine.setAttribute('x2', W-padR);
@@ -193,7 +194,6 @@
     baseLine.setAttribute('stroke-width','2');
     svg.appendChild(baseLine);
 
-    // Year labels
     for(let i=0;i<5;i++){
       const t = document.createElementNS(svg.namespaceURI,'text');
       t.setAttribute('x', x(i));
@@ -206,7 +206,6 @@
       svg.appendChild(t);
     }
 
-    // Lines
     const line1 = document.createElementNS(svg.namespaceURI,'polyline');
     line1.setAttribute('points', points(annual));
     line1.setAttribute('fill','none');
@@ -225,7 +224,6 @@
     line2.setAttribute('stroke-linejoin','round');
     svg.appendChild(line2);
 
-    // Stars + labels
     function addSeries(arr, color, labelAbove){
       arr.forEach((v,i)=>{
         const cx=x(i), cy=y(v);
@@ -252,35 +250,6 @@
 
     card.querySelector('#svgWrap').appendChild(svg);
 
-    // --- Export helpers (SVG -> PNG) ---
-    function serializeSvg(s){
-      const clone = s.cloneNode(true);
-      clone.querySelectorAll('[stroke="var(--cyan)"]').forEach(el=>el.setAttribute('stroke', '#22c7f4'));
-      clone.querySelectorAll('[stroke="var(--gold)"]').forEach(el=>el.setAttribute('stroke', '#f6b21a'));
-      const t1 = document.createElementNS('http://www.w3.org/2000/svg','text');
-      t1.setAttribute('x', W/2); t1.setAttribute('y', 34);
-      t1.setAttribute('text-anchor','middle');
-      t1.setAttribute('fill','rgba(255,255,255,.95)');
-      t1.setAttribute('font-size','22');
-      t1.setAttribute('font-weight','900');
-      t1.textContent = 'Income Astrologer';
-      clone.appendChild(t1);
-
-      const safeName = (advisorName||'').trim();
-      const subtitle = safeName ? `${safeName} Ji's Income Potential` : ``;
-      const t2 = document.createElementNS('http://www.w3.org/2000/svg','text');
-      t2.setAttribute('x', W/2); t2.setAttribute('y', 60);
-      t2.setAttribute('text-anchor','middle');
-      t2.setAttribute('fill','rgba(255,255,255,.85)');
-      t2.setAttribute('font-size','16');
-      t2.setAttribute('font-weight','800');
-      t2.textContent = subtitle;
-      clone.appendChild(t2);
-
-      const xml = new XMLSerializer().serializeToString(clone);
-      return `<?xml version="1.0" encoding="UTF-8"?>\n` + xml;
-    }
-
     function nextPngFileName(){
       const safeName = (advisorName||'Advisor').trim() || 'Advisor';
       const key = 'ia_png_count_' + safeName.toLowerCase();
@@ -299,13 +268,11 @@
       }
       const canvas = await html2canvas(area, {backgroundColor: '#0b1020', scale: 3, useCORS: true});
 
-      // ✅ Android WebView path
       if(__inApp()){
         await __downloadCanvasViaApp(canvas, nextPngFileName());
         return;
       }
 
-      // Web fallback
       const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
       if(!blob){ alert('Could not generate image.'); return; }
 
@@ -329,13 +296,11 @@
       }
       const canvas = await html2canvas(area, {backgroundColor: '#0b1020', scale: 3, useCORS: true});
 
-      // ✅ Android WebView path
       if(__inApp()){
         await __shareCanvasViaApp(canvas, nextPngFileName());
         return;
       }
 
-      // Web fallback
       const blob = await new Promise(res=>canvas.toBlob(res, 'image/png', 1.0));
       if(!blob){ alert('Could not generate image.'); return; }
 
@@ -348,10 +313,9 @@
             await navigator.share({files:[file], title:fileName, text:'Income Astrologer result'});
             return;
           }
-        }catch(e){ /* fallthrough */ }
+        }catch(e){ }
       }
 
-      // Fallback: download
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -368,7 +332,6 @@
     if(bd) bd.onclick = ()=>downloadPng();
     if(bs) bs.onclick = ()=>sharePng();
 
-    // Table (optional)
     const tbl = document.createElement('table');
     tbl.className='table';
     tbl.innerHTML = `
@@ -397,14 +360,12 @@
     window.scrollTo(0, document.body.scrollHeight);
   }
 
-  // --- Flow ---
   bubble("<b>Let’s Analyze Your Income Potential!!</b><br><span class='muted'>Answer 2 quick questions to see your 5-year earning trajectory.</span>");
   const start = document.createElement('div');
   start.className='row';
   start.innerHTML = '<button class="btn" id="go">Yes Let’s Begin!!</button>';
   app.appendChild(start);
 
-  // Ensure the opening message is visible on mobile
   window.scrollTo(0,0);
 
   document.getElementById('go').onclick = ()=>{
@@ -424,21 +385,13 @@
 </script>
 
 <script>
-/** === Android WebView helpers (share/download PNG) ===
- *  Works with your MainActivity bridge:
- *    Android.downloadBase64Png(dataUrl, fileName)
- *    Android.shareBase64Png(dataUrl, fileName)
- **/
 function __inApp(){
   return !!(window.Android &&
             (typeof Android.downloadBase64Png === 'function' || typeof Android.shareBase64Png === 'function'));
 }
-
 async function __canvasToPngDataUrl(canvas){
-  // FULL dataURL (important: Android code extracts base64 after "base64,")
   return canvas.toDataURL('image/png');
 }
-
 async function __shareCanvasViaApp(canvas, filename){
   const dataUrl = await __canvasToPngDataUrl(canvas);
   if(window.Android && typeof Android.shareBase64Png === 'function'){
@@ -447,13 +400,11 @@ async function __shareCanvasViaApp(canvas, filename){
     throw new Error('Android.shareBase64Png not available');
   }
 }
-
 async function __downloadCanvasViaApp(canvas, filename){
   const dataUrl = await __canvasToPngDataUrl(canvas);
   if(window.Android && typeof Android.downloadBase64Png === 'function'){
     Android.downloadBase64Png(dataUrl, filename || 'income-astrologer-output.png');
   } else if(window.Android && typeof Android.savePngBase64 === 'function'){
-    // backup compatibility: if you still use savePngBase64(base64Only)
     const b64 = dataUrl.split(',')[1] || '';
     Android.savePngBase64(filename || 'income-astrologer-output.png', b64);
   } else {
