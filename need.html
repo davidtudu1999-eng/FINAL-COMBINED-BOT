@@ -26,7 +26,7 @@
   .muted{color:var(--muted);font-size:13.5px;line-height:1.35}
   .title{font-weight:900;font-size:18px;margin:0 0 6px}
 
-  /* ===== Export (PNG) look & feel (matches the attached reference) ===== */
+  /* ===== Export (PNG) look & feel ===== */
   .exportTheme{
     position:relative;
     background:#000;
@@ -35,7 +35,6 @@
     overflow:hidden;
     box-shadow:0 18px 40px rgba(0,0,0,.45);
   }
-  /* subtle sparkles / glow */
   .exportTheme:before{
     content:"";
     position:absolute; inset:-40px;
@@ -70,7 +69,7 @@
     background:linear-gradient(90deg, #27AE60, #2F80ED, #F2994A);
     box-shadow:0 0 0 2px rgba(255,255,255,.08), 0 12px 26px rgba(0,0,0,.35);
   }
-  /* In export, bubbles are not chat bubbles; keep only the header pill */
+
   .exportTheme .bubble{background:transparent; box-shadow:none; padding:0; margin:0; border-radius:0;}
   .exportTheme .recWrap{margin:0;}
   .exportTheme .recCard{border-radius:22px; box-shadow:0 14px 28px rgba(0,0,0,.18);}
@@ -79,7 +78,6 @@
   .exportTheme .recDesc{font-size:18px;}
   .exportTheme .recSaved{font-size:16px;}
 
-  /* Recommendation look & feel (as per screenshots) */
   .recWrap{margin:14px;}
   .recCard{
     position:relative;
@@ -105,17 +103,9 @@
     color:#101518;
   }
   .recTitle .strong{font-weight:900;}
-  .recProduct{
-    margin:0 0 10px;
-    font-size:20px;
-    color:#101518;
-  }
+  .recProduct{margin:0 0 10px;font-size:20px;color:#101518;}
   .recProduct .label{font-weight:900;}
-  .recDesc{
-    margin:0 0 14px;
-    font-size:18px;
-    color:var(--muted);
-  }
+  .recDesc{margin:0 0 14px;font-size:18px;color:var(--muted);}
   .recSaved{
     display:flex;
     align-items:center;
@@ -125,13 +115,14 @@
     font-style:italic;
     user-select:none;
   }
-  .saveIcon{
-    width:18px;height:18px; display:inline-block;
-  }
+  .saveIcon{width:18px;height:18px; display:inline-block;}
   .saveIcon svg{width:18px;height:18px; display:block}
 </style>
+
+<!-- ✅ FIXED: correct html2canvas script -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
+
 <body>
   <div class="header">Need Analyzer</div>
   <div class="wrap" id="app"></div>
@@ -160,36 +151,37 @@
   let gi = 0;
   let started = false;
 
+  function __inApp(){
+    return (typeof window.Android !== 'undefined') && window.Android &&
+           (typeof Android.shareBase64Png === 'function' || typeof Android.downloadBase64Png === 'function' || typeof Android.savePngBase64 === 'function');
+  }
+
   async function renderExportCanvas(){
     const source = document.getElementById('resultArea');
     if(!source) throw new Error('No result area');
+
     const clone = source.cloneNode(true);
 
-    // Export header: convert the first bubble into the gradient pill header
     const firstBubble = clone.querySelector('.bubble');
     if(firstBubble){
       firstBubble.classList.add('exportHeader');
       firstBubble.innerHTML = 'Top-3 Recommendations';
     }
 
-    // Ensure action buttons are never in export (safety)
+    // ensure buttons not exported
     clone.querySelectorAll('.actionsRow, button').forEach(el=>{
       if(el && el.textContent && (el.textContent.trim()==='Download' || el.textContent.trim()==='Share')) el.remove();
     });
 
-    // Create an offscreen wrapper with padding so image looks like a clean poster (not a cut/crop)
     const wrap = document.createElement('div');
     wrap.style.position = 'fixed';
     wrap.style.left = '-9999px';
     wrap.style.top = '0';
     wrap.className = 'exportTheme';
     wrap.style.display = 'inline-block';
-
-    // lock width to on-screen width for consistent look
     wrap.style.width = source.getBoundingClientRect().width + 'px';
-
-    // Add a little extra breathing room inside
     clone.style.margin = '0';
+
     wrap.appendChild(clone);
     document.body.appendChild(wrap);
 
@@ -198,8 +190,6 @@
     return canvas;
   }
 
-
-
   function bubble(html, opts){
     const b = document.createElement('div');
     b.className = 'bubble';
@@ -207,7 +197,7 @@
     app.appendChild(b);
     const o = opts||{};
     if(started && o.scroll !== false){
-      if(started){ window.scrollTo(0, document.body.scrollHeight); }
+      window.scrollTo(0, document.body.scrollHeight);
     }
     return b;
   }
@@ -263,7 +253,6 @@
   }
 
   function formatTitle(name){
-    // Keep content as per logic; just emphasize first 2 words if possible for similar look & feel.
     const parts = (name||'').split(' ');
     if(parts.length <= 2) return `<span class="strong">${name}</span>`;
     const first = parts.slice(0,2).join(' ');
@@ -310,7 +299,7 @@
     wrap.className = 'recWrap';
     resultArea.appendChild(wrap);
 
-    const accents = ["#2F80ED","#F2994A","#27AE60"]; // blue, orange, green
+    const accents = ["#2F80ED","#F2994A","#27AE60"];
     buckets.forEach((b,i)=>{
       const rec = document.createElement('div');
       rec.className = 'recCard';
@@ -325,7 +314,6 @@
       wrap.appendChild(rec);
     });
 
-    // Action buttons (same look as primary)
     const actions = document.createElement('div');
     actions.className = 'row actionsRow';
     actions.style.marginTop = '8px';
@@ -336,6 +324,24 @@
     dlBtn.onclick = async ()=>{
       try{
         const canvas = await renderExportCanvas();
+
+        // ✅ In-app: use Android bridge
+        if(__inApp()){
+          const dataUrl = canvas.toDataURL('image/png');
+          const fileName = 'need-analyzer-output.png';
+
+          if(typeof Android.downloadBase64Png === 'function'){
+            Android.downloadBase64Png(dataUrl, fileName);
+            return;
+          }
+          if(typeof Android.savePngBase64 === 'function'){
+            const b64 = (dataUrl.split(',')[1] || '');
+            Android.savePngBase64(fileName, b64);
+            return;
+          }
+        }
+
+        // Web fallback
         const a = document.createElement('a');
         a.download = 'need-analyzer-output.png';
         a.href = canvas.toDataURL('image/png');
@@ -349,15 +355,26 @@
     shBtn.className = 'btn';
     shBtn.textContent = 'Share';
     shBtn.onclick = async ()=>{
-      const el = document.getElementById('resultArea');
-      if(!el) return;
+      // ✅ In-app: ALWAYS use Android share (reliable in WebView)
+      try{
+        const canvas = await renderExportCanvas();
+        const dataUrl = canvas.toDataURL('image/png');
+        const fileName = 'need-analyzer-output.png';
 
-      // Prefer native share sheet (includes WhatsApp on most Android devices)
+        if(__inApp() && typeof Android.shareBase64Png === 'function'){
+          // We pass dataUrl (same as Income Astrologer working version)
+          Android.shareBase64Png(dataUrl, fileName);
+          return;
+        }
+      }catch(e){
+        // continue to web fallback below
+      }
+
+      // Web share if supported (browser)
       try{
         const canvas = await renderExportCanvas();
         const blob = await new Promise(res=>canvas.toBlob(res, 'image/png'));
         const file = new File([blob], 'need-analyzer-output.png', {type:'image/png'});
-
         if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
           await navigator.share({
             title: 'Need Analyzer Output',
@@ -366,9 +383,9 @@
           });
           return;
         }
-      }catch(e){ /* fallback below */ }
+      }catch(e){}
 
-      // Fallback: share links (text only)
+      // Fallback: text-only share links
       const text = encodeURIComponent('Need Analyzer Output');
       const url = encodeURIComponent(location.href);
       const modal = document.createElement('div');
@@ -399,6 +416,7 @@
   }
 
   bubble("<b>Let’s Analyze Your Need!!</b><br><span class='muted'>Answer using ranges — no exact numbers needed.</span>");
+
   const start = document.createElement('div');
   start.className='row';
   start.innerHTML = '<button class="btn" id="go">Yes Let’s Begin!!</button>';
@@ -410,11 +428,15 @@
 
     selectQ("1) Monthly outflow for a family like yours?", OPTIONS.outflow, v=>{
       a.outflow=v;
+
       selectQ("2) Roughly, how much wealth does a family like yours have?", OPTIONS.wealth, v2=>{
         a.wealth=v2;
+
         selectQ("3) Which feels more like you?", OPTIONS.personality, v3=>{
           a.personality=v3;
+
           bubble("4) Any planned major expense in the next ~20 years? (Yes/No)");
+
           const askGoal = ()=>{
             const g = goals[gi];
             yesNoQ("Goal: "+g[1]+" — Planned?", yn=>{
@@ -433,27 +455,6 @@
     });
   };
 })();
-</script>
-
-<script>
-/** === Android WebView helpers (share/download PNG) === **/
-function __inApp(){
-  return (typeof Android !== 'undefined') && Android && (Android.shareBase64Png || Android.saveBase64Png);
-}
-async function __canvasToBase64Png(canvas){
-  const dataUrl = canvas.toDataURL('image/png');
-  return dataUrl.split(',')[1] || '';
-}
-async function __shareCanvasViaApp(canvas, filename, title){
-  const b64 = await __canvasToBase64Png(canvas);
-  if(!b64) throw new Error('empty');
-  if(Android.shareBase64Png) Android.shareBase64Png(b64, filename || 'need-analyzer-output.png', title || '');
-}
-async function __saveCanvasViaApp(canvas, filename){
-  const b64 = await __canvasToBase64Png(canvas);
-  if(!b64) throw new Error('empty');
-  if(Android.saveBase64Png) Android.saveBase64Png(b64, filename || 'need-analyzer-output.png');
-}
 </script>
 
 </body>
