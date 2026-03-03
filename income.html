@@ -94,11 +94,8 @@
   const MULT = [1.00, 1.50, 2.25, 2.75, 3.50];
   const HIGH_MULT = 1.50;
 
-  // ✅ UPDATED per your request
-  const Y_AXIS_MAX_LPA = 126;
-
-  // ✅ NEW: adds visual gap above x-axis for small incomes
-  const Y_PAD_LPA = 18;
+  // ✅ HARD CAP as you asked
+  const Y_MAX_CAP_LPA = 126;
 
   function roundLpa(x){ return Math.round(x); }
 
@@ -109,6 +106,17 @@
     const annual = MULT.map(m=>roundLpa(base*m));
     const high = annual.map(v=>roundLpa(v*HIGH_MULT));
     return {annual, high};
+  }
+
+  // ✅ Nice rounded Y-axis max like your sample (30/40/50/60...)
+  function niceYAxisMax(maxVal, cap){
+    const target = Math.max(10, maxVal * 1.25); // give headroom like the sample chart
+    const steps = [10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 100, 110, 126];
+    let chosen = cap;
+    for(const s of steps){
+      if(s >= target){ chosen = s; break; }
+    }
+    return Math.min(chosen, cap);
   }
 
   // --- Chart (SVG) ---
@@ -139,18 +147,18 @@
       sub.textContent = safeName ? `${safeName} Ji's Income Potential` : ``;
     }
 
-    // ✅ UPDATED: bigger chart area (height increased)
-    const W = 760, H = 380;
+    // ✅ Slightly bigger chart area
+    const W = 760, H = 400;
 
-    const padL=40, padR=24, padT=20, padB=52;
+    const padL=58, padR=24, padT=22, padB=56;
 
-    // ✅ UPDATED: allow some "below zero" space so small values float up
-    const maxV = Y_AXIS_MAX_LPA;
-    const minV = -Y_PAD_LPA;
+    // ✅ Auto scale Y-axis based on values, capped at 126
+    const maxData = Math.max(...annual, ...high, 10);
+    const maxV = niceYAxisMax(maxData, Y_MAX_CAP_LPA);
+    const minV = 0;
 
     const x = (i)=> padL + (W-padL-padR) * (i/4);
     const y = (v)=> padT + (H-padT-padB) * (1 - (v-minV)/(maxV-minV));
-
     const points = (arr)=> arr.map((v,i)=> `${x(i)},${y(v)}`).join(' ');
 
     function starPath(cx, cy, r1, r2){
@@ -171,11 +179,13 @@
     svg.setAttribute('width','100%');
     svg.setAttribute('height','auto');
 
+    // background
     const bg = document.createElementNS(svg.namespaceURI,'rect');
     bg.setAttribute('x','0'); bg.setAttribute('y','0'); bg.setAttribute('width',W); bg.setAttribute('height',H);
     bg.setAttribute('fill','#0b1020');
     svg.appendChild(bg);
 
+    // stars
     for(let i=0;i<55;i++){
       const c = document.createElementNS(svg.namespaceURI,'circle');
       c.setAttribute('cx', Math.random()*W);
@@ -185,6 +195,33 @@
       svg.appendChild(c);
     }
 
+    // ✅ Grid + Y-axis labels (like your sample chart)
+    const gridCount = 6; // number of horizontal bands
+    for(let k=0;k<=gridCount;k++){
+      const v = (maxV/gridCount) * k;
+      const yy = y(v);
+
+      const gl = document.createElementNS(svg.namespaceURI,'line');
+      gl.setAttribute('x1', padL);
+      gl.setAttribute('x2', W-padR);
+      gl.setAttribute('y1', yy);
+      gl.setAttribute('y2', yy);
+      gl.setAttribute('stroke', 'rgba(255,255,255,.14)');
+      gl.setAttribute('stroke-width', (k===0 ? '2' : '1'));
+      svg.appendChild(gl);
+
+      const tl = document.createElementNS(svg.namespaceURI,'text');
+      tl.setAttribute('x', padL-12);
+      tl.setAttribute('y', yy+5);
+      tl.setAttribute('text-anchor','end');
+      tl.setAttribute('fill','rgba(255,255,255,.70)');
+      tl.setAttribute('font-size','12');
+      tl.setAttribute('font-weight','800');
+      tl.textContent = `${Math.round(v)}`;
+      svg.appendChild(tl);
+    }
+
+    // X-axis baseline
     const baseLine = document.createElementNS(svg.namespaceURI,'line');
     baseLine.setAttribute('x1', padL);
     baseLine.setAttribute('x2', W-padR);
@@ -194,6 +231,7 @@
     baseLine.setAttribute('stroke-width','2');
     svg.appendChild(baseLine);
 
+    // Year labels
     for(let i=0;i<5;i++){
       const t = document.createElementNS(svg.namespaceURI,'text');
       t.setAttribute('x', x(i));
@@ -206,6 +244,7 @@
       svg.appendChild(t);
     }
 
+    // Lines
     const line1 = document.createElementNS(svg.namespaceURI,'polyline');
     line1.setAttribute('points', points(annual));
     line1.setAttribute('fill','none');
@@ -224,9 +263,11 @@
     line2.setAttribute('stroke-linejoin','round');
     svg.appendChild(line2);
 
+    // Stars + labels
     function addSeries(arr, color, labelAbove){
       arr.forEach((v,i)=>{
         const cx=x(i), cy=y(v);
+
         const star = document.createElementNS(svg.namespaceURI,'path');
         star.setAttribute('d', starPath(cx, cy, 6, 12));
         star.setAttribute('fill', 'rgba(255,255,255,.92)');
