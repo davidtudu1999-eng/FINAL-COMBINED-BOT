@@ -18,8 +18,6 @@
     background:var(--wa);color:#fff;padding:18px 18px;
     font-weight:900;font-size:22px;letter-spacing:.2px;
   }
-
-  /* ✅ Let the page breathe less on mobile so card can be bigger */
   .wrap{padding-top:88px;max-width:980px;margin:0 auto;min-height:100vh;}
 
   .bubble{margin:14px 14px 10px;padding:14px 16px;background:var(--card);border-radius:18px;font-size:16px;line-height:1.35;}
@@ -29,17 +27,13 @@
   input{width:100%;padding:12px 12px;border-radius:14px;border:1px solid #d1d7db;background:#fff;font:inherit}
   .muted{color:var(--muted);font-size:13.5px;line-height:1.35}
 
-  /* ✅ BIGGER overall output card */
+  /* Bigger overall card */
   .chartCard{
     background:var(--dark);
     color:#e6eef7;
     border-radius:22px;
     overflow:hidden;
-
-    /* less margin on sides so card becomes wider */
     margin:10px 8px;
-
-    /* more vertical space inside card */
     padding:18px 14px 20px;
   }
 
@@ -50,17 +44,16 @@
   .dot.cyan{background:var(--cyan)}
   .dot.gold{background:var(--gold)}
 
-  /* ✅ Make chart area much taller (0–126 area gets bigger) */
+  /* ✅ Chart area big, but fits without forcing extra scroll */
   #svgWrap{width:100%; margin-top:6px;}
   #svgWrap svg{
     width:100%;
-    height:56vh;        /* ✅ BIGGER than before */
-    min-height:380px;   /* ✅ ensures big chart even on small phones */
-    max-height:640px;
+    height:44vh;          /* ✅ reduced from 56vh so card fits */
+    min-height:300px;
+    max-height:520px;
     display:block;
   }
 
-  /* Buttons row slightly bigger */
   #actionRow .btn{ padding:16px 22px; font-size:18px; }
 
   .table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14.5px}
@@ -69,7 +62,6 @@
   .pill{display:inline-block;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.10);font-weight:900}
 
   @media (min-width: 860px){
-    /* desktop/laptop: center and make it look premium */
     .chartCard{ margin:14px auto; max-width:920px; }
     #svgWrap svg{ height:520px; max-height:none; }
   }
@@ -136,7 +128,7 @@
   const MULT = [1.00, 1.50, 2.25, 2.75, 3.50];
   const HIGH_MULT = 1.50;
 
-  // ✅ Fixed cap
+  // Fixed cap (labels never change)
   const Y_MAX_LPA = 126;
 
   function roundLpa(x){ return Math.round(x); }
@@ -177,12 +169,13 @@
       sub.textContent = safeName ? `${safeName} Ji's Income Potential` : ``;
     }
 
-    // Bigger SVG canvas so drawing has more room
+    // Bigger SVG canvas
     const W = 980;
     const H = 620;
     const padL=86, padR=40, padT=52, padB=112;
 
-    const minV = -30;
+    // ✅ FIXED range, and NO negative space
+    const minV = 0;
     const maxV = Y_MAX_LPA;
 
     const x = (i)=> padL + (W-padL-padR) * (i/4);
@@ -247,11 +240,13 @@
       svg.appendChild(tl);
     });
 
+    /* ✅ Baseline exactly at 0L (removes empty block below) */
     const baseLine = document.createElementNS(svg.namespaceURI,'line');
     baseLine.setAttribute('x1', padL);
     baseLine.setAttribute('x2', W-padR);
-    baseLine.setAttribute('y1', H-padB);
-    baseLine.setAttribute('y2', H-padB);
+    const y0 = y(0);
+    baseLine.setAttribute('y1', y0);
+    baseLine.setAttribute('y2', y0);
     baseLine.setAttribute('stroke', 'rgba(255,255,255,.22)');
     baseLine.setAttribute('stroke-width','2');
     svg.appendChild(baseLine);
@@ -474,3 +469,4 @@ async function __downloadCanvasViaApp(canvas, filename){
 
 </body>
 </html>
+
