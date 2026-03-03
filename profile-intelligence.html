@@ -279,7 +279,7 @@ body.dark .piPanel{ background:#071022; }
     try{
       if(window.Android && typeof Android.getCapturedProfileText === 'function'){
         const t = (Android.getCapturedProfileText() || '').trim();
-        if(t.length > 50){
+        if(t.length > 45){
           localStorage.setItem('pi_captured', t);
           return t;
         }
