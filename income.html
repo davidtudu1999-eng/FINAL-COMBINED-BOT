@@ -136,8 +136,8 @@
     }
 
     // ✅ Larger chart area
-    const W = 760, H = 400;
-    const padL=62, padR=24, padT=22, padB=56;
+    const W = 900, H = 520;
+    const padL=80, padR=40, padT=40, padB=90;
 
     // ✅ FIXED axis range (does not change per input)
     // ✅ Lift baseline for better visibility of 5L/10L/20L
@@ -242,7 +242,7 @@
     line1.setAttribute('points', points(annual));
     line1.setAttribute('fill','none');
     line1.setAttribute('stroke','var(--cyan)');
-    line1.setAttribute('stroke-width','4');
+    line1.setAttribute('stroke-width','5');
     line1.setAttribute('stroke-linecap','round');
     line1.setAttribute('stroke-linejoin','round');
     svg.appendChild(line1);
@@ -251,7 +251,7 @@
     line2.setAttribute('points', points(high));
     line2.setAttribute('fill','none');
     line2.setAttribute('stroke','var(--gold)');
-    line2.setAttribute('stroke-width','4');
+    line2.setAttribute('stroke-width','5');
     line2.setAttribute('stroke-linecap','round');
     line2.setAttribute('stroke-linejoin','round');
     svg.appendChild(line2);
@@ -262,7 +262,7 @@
         const cx=x(i), cy=y(v);
 
         const star = document.createElementNS(svg.namespaceURI,'path');
-        star.setAttribute('d', starPath(cx, cy, 6, 12));
+        star.setAttribute('d', starPath(cx, cy, 8, 16));
         star.setAttribute('fill', 'rgba(255,255,255,.92)');
         star.setAttribute('stroke', color);
         star.setAttribute('stroke-width','2.5');
