@@ -70,31 +70,152 @@ main{
   cursor:pointer;
   min-width:220px;
 }
-.btnDanger{
-  background:var(--danger);
-}
+.btnDanger{ background:var(--danger); }
 .status{
   margin-top:12px;
   text-align:center;
   font-weight:800;
   color:var(--muted);
 }
-.points{
-  margin-top:16px;
-  list-style:none;
-  padding:0;
-  display:grid;
-  gap:10px;
-}
-.point{
-  background:rgba(34,197,94,.12);
-  padding:14px;
-  border-radius:14px;
-  font-weight:750;
-  line-height:1.35;
-}
 .small{font-size:14px;color:var(--muted);font-weight:700;margin-top:10px;text-align:center}
 
+/* =========================
+   Premium 7-bar Accordion UI
+   ========================= */
+.piWrap{
+  margin-top:18px;
+}
+
+.piBars{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  align-items:stretch;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  padding:10px 6px 14px;
+  -webkit-overflow-scrolling:touch;
+}
+
+.piBar{
+  position:relative;
+  border:0;
+  cursor:pointer;
+  min-width:84px;
+  width:92px;
+  height:320px;
+  border-radius:34px;
+  color:#0b1220;
+  box-shadow:
+    0 18px 40px rgba(0,0,0,.12),
+    inset 0 0 0 1px rgba(255,255,255,.30);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  outline:none;
+  user-select:none;
+}
+.piBar:active{ transform: scale(.99); }
+.piBar:hover{ filter: brightness(1.02); }
+
+.piPlus{
+  position:absolute;
+  top:14px; left:14px;
+  width:34px; height:34px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  font-weight:950;
+  font-size:20px;
+  background: rgba(255,255,255,.55);
+  box-shadow: 0 10px 18px rgba(0,0,0,.10);
+}
+
+.piTitle{
+  font-weight:950;
+  font-size:18px;
+  letter-spacing:.2px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  opacity:.95;
+  text-align:center;
+  padding:18px 0;
+}
+
+.piBar.active{
+  transform: translateY(-4px);
+  box-shadow:
+    0 24px 54px rgba(0,0,0,.18),
+    inset 0 0 0 1px rgba(255,255,255,.40);
+}
+.piBar.active .piPlus{ background: rgba(255,255,255,.82); }
+
+/* 7 premium colors */
+.c1{ background: linear-gradient(180deg,#E8E7FF,#D6D2FF); } /* lavender */
+.c2{ background: linear-gradient(180deg,#E8FFF6,#BFF3DE); } /* mint */
+.c3{ background: linear-gradient(180deg,#FFF3E6,#FFD3A8); } /* sand */
+.c4{ background: linear-gradient(180deg,#E7F1FF,#BFD9FF); } /* sky */
+.c5{ background: linear-gradient(180deg,#FFF0F6,#FFC6D9); } /* rose */
+.c6{ background: linear-gradient(180deg,#F1FFF0,#D5F8C8); } /* sage */
+.c7{ background: linear-gradient(180deg,#F6F7FB,#DDE2F3); } /* slate */
+
+/* Expanded panel (below) */
+.piPanel{
+  background: #0b1020;
+  color:#eef2ff;
+  border-radius:22px;
+  padding:16px 16px;
+  box-shadow:0 18px 40px rgba(0,0,0,.18);
+  margin: 6px 6px 8px;
+  position:relative;
+  overflow:hidden;
+}
+body.dark .piPanel{
+  background:#071022;
+}
+.piPanel:before{
+  content:"";
+  position:absolute; inset:-30px;
+  background:
+    radial-gradient(280px 220px at 20% 20%, rgba(34,199,244,.22), rgba(0,0,0,0) 60%),
+    radial-gradient(320px 260px at 85% 10%, rgba(246,178,26,.18), rgba(0,0,0,0) 60%),
+    radial-gradient(360px 280px at 55% 95%, rgba(37,211,102,.14), rgba(0,0,0,0) 60%);
+  pointer-events:none;
+}
+.piPanel > *{ position:relative; }
+
+.piPanel h3{
+  margin:0 0 10px;
+  font-size:18px;
+  font-weight:950;
+  letter-spacing:.2px;
+}
+.piText{
+  font-size:15.5px;
+  line-height:1.45;
+  opacity:.95;
+  white-space:pre-wrap;
+}
+
+/* Mobile: show bars as horizontal pills (still same behavior) */
+@media (max-width: 520px){
+  .piBar{
+    height:56px;
+    width:auto;
+    min-width:240px;
+    border-radius:999px;
+    justify-content:flex-start;
+    padding-left:62px;
+  }
+  .piTitle{
+    writing-mode:initial;
+    transform:none;
+    padding:0;
+    text-align:left;
+    font-size:16px;
+  }
+}
 </style>
 </head>
 
@@ -128,7 +249,13 @@ main{
   </div>
 
   <div class="status" id="status">Open LinkedIn profile and scroll.</div>
-  <ul class="points" id="points"></ul>
+
+  <!-- NEW OUTPUT UI -->
+  <div class="piWrap">
+    <div id="piBars" class="piBars"></div>
+    <div id="piPanel" class="piPanel" style="display:none;"></div>
+  </div>
+
   <div class="small" id="debugHint"></div>
 </section>
 
@@ -137,7 +264,6 @@ main{
 <script>
 (function(){
   // ---------- HARD RESET OF OLD STATE (prevents “stuck error”) ----------
-  // We keep captured text, but clear old points/errors from older builds.
   try{
     localStorage.removeItem('pi_points');
     localStorage.removeItem('pi_error');
@@ -161,7 +287,6 @@ main{
   const introCard = document.getElementById('introCard');
   const outCard   = document.getElementById('outCard');
   const statusEl  = document.getElementById('status');
-  const pointsEl  = document.getElementById('points');
   const debugHint = document.getElementById('debugHint');
 
   function showIntro(){ introCard.style.display=''; outCard.style.display='none'; }
@@ -169,7 +294,6 @@ main{
 
   // ---------- Capture helpers ----------
   function getCaptured(){
-    // Prefer Android getter if present
     try{
       if(window.Android && typeof Android.getCapturedProfileText === 'function'){
         const t = (Android.getCapturedProfileText() || '').trim();
@@ -197,37 +321,116 @@ main{
   document.getElementById('goBtn').onclick = () => {
     try{
       if(window.Android && typeof Android.startLinkedInCapture === 'function'){
-        Android.startLinkedInCapture();
-        return;
+        Android.startLinkedInCapture(); return;
       }
       if(window.Android && typeof Android.openLinkedIn === 'function'){
-        Android.openLinkedIn();
-        return;
+        Android.openLinkedIn(); return;
       }
     }catch(e){}
-    // fallback
     window.location.href = "https://www.linkedin.com/";
   };
 
-  // ---------- Render ----------
-  function renderPoints(arr){
-    pointsEl.innerHTML = '';
-    if(!Array.isArray(arr) || arr.length === 0){
-      pointsEl.innerHTML = '<li class="point">No insights returned from Worker.</li>';
+  // ---------- Premium 7-bar renderer ----------
+  function escapeHtml(str){
+    return String(str ?? '')
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function normalizeToSections(arr){
+    const sections = [];
+    if(!Array.isArray(arr)) return sections;
+
+    arr.slice(0,7).forEach((p, i)=>{
+      // string point: try split "Heading: body"
+      if(typeof p === 'string'){
+        const s = p.trim();
+        const idx = s.indexOf(':');
+        if(idx > 0 && idx < 80){
+          const t = s.slice(0, idx).trim();
+          const b = s.slice(idx+1).trim();
+          sections.push({ title: t || `Heading ${i+1}`, body: b || s });
+        }else{
+          sections.push({ title: `Heading ${i+1}`, body: s });
+        }
+        return;
+      }
+
+      // object point
+      if(p && typeof p === 'object'){
+        const title = (p.title || p.heading || p.name || `Heading ${i+1}`);
+        const body  = (p.body || p.text || p.value || p.description || JSON.stringify(p, null, 2));
+        sections.push({ title: String(title), body: String(body) });
+        return;
+      }
+
+      // fallback
+      sections.push({ title: `Heading ${i+1}`, body: String(p) });
+    });
+
+    return sections;
+  }
+
+  function renderBars(sections){
+    const barsEl = document.getElementById('piBars');
+    const panelEl = document.getElementById('piPanel');
+    if(!barsEl || !panelEl) return;
+
+    barsEl.innerHTML = '';
+    panelEl.style.display = 'none';
+    panelEl.innerHTML = '';
+
+    if(!Array.isArray(sections) || sections.length === 0){
+      panelEl.style.display = '';
+      panelEl.innerHTML = `<h3>No insights</h3><div class="piText">No insights returned from Worker.</div>`;
       return;
     }
-    arr.slice(0,7).forEach((p,i)=>{
-      const li = document.createElement('li');
-      li.className = 'point';
-      if(typeof p === 'string'){
-        li.textContent = (i+1)+') ' + p;
+
+    const colorClasses = ["c1","c2","c3","c4","c5","c6","c7"];
+    let active = -1;
+
+    function setActive(idx){
+      active = idx;
+
+      [...barsEl.children].forEach((btn, i)=>{
+        btn.classList.toggle('active', i===active);
+        const plus = btn.querySelector('.piPlus');
+        if(plus) plus.textContent = (i===active) ? "–" : "+";
+        btn.setAttribute('aria-expanded', (i===active) ? 'true' : 'false');
+      });
+
+      if(active >= 0){
+        panelEl.style.display = '';
+        panelEl.innerHTML = `
+          <h3>${escapeHtml(sections[active].title || '')}</h3>
+          <div class="piText">${escapeHtml(sections[active].body || '')}</div>
+        `;
+        // scroll panel into view nicely (mobile friendly)
+        panelEl.scrollIntoView({behavior:'smooth', block:'start'});
       }else{
-        const title = p.title ? (p.title + ': ') : '';
-        const body  = p.body || p.text || JSON.stringify(p);
-        li.textContent = (i+1)+') ' + title + body;
+        panelEl.style.display = 'none';
+        panelEl.innerHTML = '';
       }
-      pointsEl.appendChild(li);
+    }
+
+    sections.slice(0,7).forEach((s, i)=>{
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `piBar ${colorClasses[i] || 'c1'}`;
+      btn.setAttribute('aria-expanded','false');
+      btn.innerHTML = `
+        <div class="piPlus">+</div>
+        <div class="piTitle">${escapeHtml(s.title || ('Heading ' + (i+1)))}</div>
+      `;
+      btn.onclick = ()=> setActive(i); // only one open at a time
+      barsEl.appendChild(btn);
     });
+
+    // Default: open the first section
+    setActive(0);
   }
 
   // ---------- Worker call ----------
@@ -235,7 +438,6 @@ main{
     const res = await fetch(WORKER_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      // send ALL common keys so worker validation passes
       body: JSON.stringify({
         rawText: text,
         profileText: text,
@@ -246,7 +448,6 @@ main{
     const raw = await res.text();
 
     if(!res.ok){
-      // Worker error JSON/text both will show
       throw new Error(raw.slice(0, 400));
     }
 
@@ -259,23 +460,19 @@ main{
 
     let pts = data.points ?? data.insights ?? data.result ?? data.output ?? data.message ?? data;
 
-    // normalize string -> bullets
     if(typeof pts === 'string'){
       const lines = pts.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,7);
       return lines.length ? lines : [pts];
     }
 
-    // array of strings
     if(Array.isArray(pts) && pts.length && typeof pts[0] === 'string'){
       return pts.slice(0,7);
     }
 
-    // array of objects
     if(Array.isArray(pts)){
       return pts.slice(0,7);
     }
 
-    // object
     if(pts && typeof pts === 'object'){
       return [pts];
     }
@@ -296,15 +493,16 @@ main{
 
     showOutput();
     statusEl.textContent = 'Generating insights…';
-    pointsEl.innerHTML = '';
+
     try{
       const pts = await fetchInsights(text);
       localStorage.setItem('pi_points', JSON.stringify(pts));
       statusEl.textContent = 'Ready';
-      renderPoints(pts);
+      const sections = normalizeToSections(pts);
+      renderBars(sections);
     }catch(e){
       statusEl.textContent = 'Error: ' + (e?.message || e);
-      renderPoints([]);
+      renderBars([]);
     }
   };
 
@@ -324,7 +522,8 @@ main{
       const pts = JSON.parse(cached);
       showOutput();
       statusEl.textContent = 'Ready';
-      renderPoints(pts);
+      const sections = normalizeToSections(pts);
+      renderBars(sections);
       return;
     }catch(e){}
   }
@@ -339,7 +538,6 @@ main{
 
 })();
 </script>
-
 
 </body>
 </html>
