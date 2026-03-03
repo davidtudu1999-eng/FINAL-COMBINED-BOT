@@ -92,7 +92,7 @@ main{
   text-align:center;
 }
 
-/* ===== Horizontal bar accordion ===== */
+/* ===== Accordion list ===== */
 .piWrap{ margin-top:18px; }
 .piList{
   display:flex;
@@ -100,7 +100,10 @@ main{
   gap:14px;
 }
 
-/* Use BUTTON for better accessibility + tap handling */
+/* container for each item (bar + expanded content) */
+.piItem{}
+
+/* Use BUTTON for reliable tapping */
 .piBar{
   position:relative;
   width:100%;
@@ -112,14 +115,12 @@ main{
   border:2px solid rgba(0,0,0,.14);
   overflow:hidden;
 
-  /* button reset */
   appearance:none;
   -webkit-appearance:none;
   background:transparent;
   font:inherit;
   text-align:left;
 
-  /* ✅ MIUI/WebView tap fixes */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -133,8 +134,6 @@ body.dark .piBar{ border-color: rgba(255,255,255,.18); }
 .piBar.c5{ background:linear-gradient(90deg,#EFE7D7,#EFEAD9); }
 .piBar.c6{ background:linear-gradient(90deg,#A7D7D5,#9DD2D7); }
 .piBar.c7{ background:linear-gradient(90deg,#C9B5C9,#CBB9D0); }
-
-.piBar:active{ transform: scale(.995); }
 
 .piIcon{
   position:absolute;
@@ -152,9 +151,8 @@ body.dark .piBar{ border-color: rgba(255,255,255,.18); }
   color:#111827;
   background: rgba(255,255,255,.55);
   box-shadow:0 10px 18px rgba(0,0,0,.10);
-  pointer-events:none; /* ✅ let the whole bar handle tap */
+  pointer-events:none;
 }
-
 .piTitle{
   font-weight:950;
   font-size:20px;
@@ -162,9 +160,9 @@ body.dark .piBar{ border-color: rgba(255,255,255,.18); }
   color:#111827;
 }
 
-/* Expanded panel */
+/* Expanded content right under the bar */
 .piPanel{
-  margin-top:12px;
+  margin-top:10px;
   border-radius:22px;
   background:#0b1020;
   color:#eef2ff;
@@ -198,6 +196,9 @@ body.dark .piPanel{ background:#071022; }
   white-space:pre-wrap;
 }
 
+/* Optional: smooth expand */
+.piPanel.open{ display:block; }
+
 @media (max-width:520px){
   header h1{ font-size:30px; }
   .piTitle{ font-size:18px; }
@@ -220,7 +221,6 @@ body.dark .piPanel{ background:#071022; }
       Open the profile in LinkedIn, scroll a bit so the app can capture text.
       Then return here and tap <b>Get Insights</b>.
     </p>
-
     <div class="ctaRow">
       <button class="cta" id="goBtn" type="button">Let’s Go!!</button>
     </div>
@@ -237,7 +237,6 @@ body.dark .piPanel{ background:#071022; }
 
     <div class="piWrap">
       <div id="piList" class="piList"></div>
-      <div id="piPanel" class="piPanel"></div>
     </div>
 
     <div class="small" id="debugHint"></div>
@@ -246,7 +245,6 @@ body.dark .piPanel{ background:#071022; }
 
 <script>
 (function(){
-  // Theme
   const body = document.body;
   const toggleBtn = document.getElementById('toggleBtn');
   function applyTheme(t){
@@ -257,16 +255,13 @@ body.dark .piPanel{ background:#071022; }
   applyTheme(localStorage.getItem('theme') || 'light');
   toggleBtn.onclick = ()=> applyTheme(body.classList.contains('dark') ? 'light' : 'dark');
 
-  // ✅ Plain Worker URL
   const WORKER_URL = "https://dry-fire-c28e.davidtudu1999.workers.dev";
 
-  // DOM
   const introCard = document.getElementById('introCard');
   const outCard   = document.getElementById('outCard');
   const statusEl  = document.getElementById('status');
   const debugHint = document.getElementById('debugHint');
   const listEl    = document.getElementById('piList');
-  const panelEl   = document.getElementById('piPanel');
 
   function showIntro(){ introCard.style.display=''; outCard.style.display='none'; }
   function showOutput(){ introCard.style.display='none'; outCard.style.display=''; }
@@ -280,7 +275,6 @@ body.dark .piPanel{ background:#071022; }
       .replaceAll("'","&#039;");
   }
 
-  // Capture helpers
   function getCaptured(){
     try{
       if(window.Android && typeof Android.getCapturedProfileText === 'function'){
@@ -294,18 +288,13 @@ body.dark .piPanel{ background:#071022; }
     return (localStorage.getItem('pi_captured') || '').trim();
   }
 
-  // Android can inject captured text directly
   window.PI_setCapturedText = function(text){
-    try{
-      const t = (text == null) ? '' : String(text);
-      localStorage.setItem('pi_captured', t);
-    }catch(e){}
+    try{ localStorage.setItem('pi_captured', String(text ?? '')); }catch(e){}
     showOutput();
     statusEl.textContent = 'Captured. Tap “Get Insights”.';
     debugHint.textContent = '';
   };
 
-  // Open LinkedIn
   document.getElementById('goBtn').onclick = () => {
     try{
       if(window.Android && typeof Android.startLinkedInCapture === 'function'){
@@ -321,7 +310,6 @@ body.dark .piPanel{ background:#071022; }
   function normalizeToSections(arr){
     const sections = [];
     if(!Array.isArray(arr)) return sections;
-
     arr.slice(0,7).forEach((p, i)=>{
       if(typeof p === 'string'){
         const s = p.trim();
@@ -333,90 +321,35 @@ body.dark .piPanel{ background:#071022; }
         }
         return;
       }
-
       if(p && typeof p === 'object'){
         const title = (p.title || p.heading || p.name || `Heading ${i+1}`);
         const body  = (p.body || p.text || p.value || p.description || JSON.stringify(p, null, 2));
         sections.push({ title: String(title), body: String(body) });
         return;
       }
-
       sections.push({ title: `Heading ${i+1}`, body: String(p) });
     });
-
     return sections;
   }
 
-  // ===== Accordion (MIUI-safe) =====
-  let __sections = [];
   let __active = -1;
-
-  function updateUI(){
-    const children = Array.from(listEl.children);
-    children.forEach((btn, i)=>{
-      const icon = btn.querySelector('.piIcon');
-      if(icon) icon.textContent = (i === __active) ? "–" : "+";
-    });
-
-    if(__active >= 0){
-      panelEl.style.display = '';
-      panelEl.innerHTML = `
-        <h3>${escapeHtml(__sections[__active].title || '')}</h3>
-        <p class="piText">${escapeHtml(__sections[__active].body || '')}</p>
-      `;
-      // statusEl.textContent = `Opened: ${__active+1}`; // optional
-      panelEl.scrollIntoView({behavior:'smooth', block:'nearest'});
-    }else{
-      panelEl.style.display = 'none';
-      panelEl.innerHTML = '';
-    }
-  }
-
-  function setActive(idx){
-    __active = (__active === idx) ? -1 : idx;
-    updateUI();
-  }
-
-  // ✅ Event delegation = most reliable on MIUI WebView
-  function attachDelegatedHandlers(){
-    const handler = (ev)=>{
-      const t = ev.target;
-      const bar = t && t.closest ? t.closest('.piBar') : null;
-      if(!bar) return;
-
-      ev.preventDefault();
-      ev.stopPropagation();
-
-      const idx = Number(bar.getAttribute('data-idx'));
-      if(Number.isNaN(idx)) return;
-
-      // show tap detected (so we know WebView is firing events)
-      statusEl.textContent = `Tapped: ${idx+1}`;
-      setActive(idx);
-    };
-
-    listEl.addEventListener('pointerup', handler, {passive:false});
-    listEl.addEventListener('touchend', handler, {passive:false});
-    listEl.addEventListener('click', handler, {passive:false});
-  }
 
   function renderBars(sections){
     listEl.innerHTML = '';
-    panelEl.style.display = 'none';
-    panelEl.innerHTML = '';
+    __active = -1;
 
-    if(!Array.isArray(sections) || sections.length === 0){
-      panelEl.style.display = '';
-      panelEl.innerHTML = `<h3>No insights</h3><p class="piText">No insights returned from Worker.</p>`;
+    if(!sections || !sections.length){
+      listEl.innerHTML = '';
+      statusEl.textContent = 'No insights returned.';
       return;
     }
 
-    __sections = sections.slice(0,7);
-    __active = -1;
-
     const colors = ["c1","c2","c3","c4","c5","c6","c7"];
 
-    __sections.forEach((s, i)=>{
+    sections.slice(0,7).forEach((s, i)=>{
+      const item = document.createElement('div');
+      item.className = 'piItem';
+
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `piBar ${colors[i] || "c1"}`;
@@ -425,23 +358,67 @@ body.dark .piPanel{ background:#071022; }
         <span class="piIcon">+</span>
         <span class="piTitle">${escapeHtml(s.title || ('Heading ' + (i+1)))}</span>
       `;
-      listEl.appendChild(btn);
-    });
 
-    updateUI(); // start collapsed
+      const panel = document.createElement('div');
+      panel.className = 'piPanel';
+      panel.innerHTML = `
+        <h3>${escapeHtml(s.title || '')}</h3>
+        <p class="piText">${escapeHtml(s.body || '')}</p>
+      `;
+
+      item.appendChild(btn);
+      item.appendChild(panel);
+      listEl.appendChild(item);
+    });
   }
 
-  attachDelegatedHandlers();
+  // ✅ MIUI-safe event delegation (open one at a time)
+  function handleTap(ev){
+    const bar = ev.target && ev.target.closest ? ev.target.closest('.piBar') : null;
+    if(!bar) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    const idx = Number(bar.getAttribute('data-idx'));
+    if(Number.isNaN(idx)) return;
+
+    statusEl.textContent = `Tapped: ${idx+1}`;
+
+    const items = Array.from(listEl.querySelectorAll('.piItem'));
+    items.forEach((it, i)=>{
+      const b = it.querySelector('.piBar');
+      const icon = it.querySelector('.piIcon');
+      const p = it.querySelector('.piPanel');
+
+      if(i === idx){
+        const isOpen = p.classList.contains('open');
+        // close all first
+        items.forEach(x=>{
+          const pp = x.querySelector('.piPanel'); if(pp) pp.classList.remove('open');
+          const ii = x.querySelector('.piIcon'); if(ii) ii.textContent = '+';
+        });
+        // toggle this one
+        if(!isOpen){
+          p.classList.add('open');
+          if(icon) icon.textContent = '–';
+          setTimeout(()=> p.scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
+        } else {
+          if(icon) icon.textContent = '+';
+        }
+      }
+    });
+  }
+
+  listEl.addEventListener('pointerup', handleTap, {passive:false});
+  listEl.addEventListener('touchend', handleTap, {passive:false});
+  listEl.addEventListener('click', handleTap, {passive:false});
 
   async function fetchInsights(text){
     const res = await fetch(WORKER_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        rawText: text,
-        profileText: text,
-        capturedText: text
-      })
+      body: JSON.stringify({ rawText:text, profileText:text, capturedText:text })
     });
 
     const raw = await res.text();
@@ -452,14 +429,12 @@ body.dark .piPanel{ background:#071022; }
     catch(e){ throw new Error("Worker returned non-JSON: " + raw.slice(0, 300)); }
 
     let pts = data.points ?? data.insights ?? data.result ?? data.output ?? data.message ?? data;
-
     if(typeof pts === 'string'){
       const lines = pts.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,7);
       return lines.length ? lines : [pts];
     }
     if(Array.isArray(pts)) return pts.slice(0,7);
     if(pts && typeof pts === 'object') return [pts];
-
     return [];
   }
 
@@ -480,9 +455,7 @@ body.dark .piPanel{ background:#071022; }
       const pts = await fetchInsights(text);
       localStorage.setItem('pi_points', JSON.stringify(pts));
       statusEl.textContent = 'Ready';
-
-      const sections = normalizeToSections(pts);
-      renderBars(sections);
+      renderBars(normalizeToSections(pts));
     }catch(e){
       statusEl.textContent = 'Error: ' + (e?.message || e);
       renderBars([]);
@@ -498,15 +471,14 @@ body.dark .piPanel{ background:#071022; }
     location.reload();
   };
 
-  // Boot (restore last results if available)
+  // Boot
   const cached = localStorage.getItem('pi_points');
   if(cached){
     try{
       const pts = JSON.parse(cached);
       showOutput();
       statusEl.textContent = 'Ready';
-      const sections = normalizeToSections(pts);
-      renderBars(sections);
+      renderBars(normalizeToSections(pts));
       return;
     }catch(e){}
   }
@@ -518,11 +490,12 @@ body.dark .piPanel{ background:#071022; }
   }else{
     showIntro();
   }
-
 })();
 </script>
+
 </body>
 </html>
+
 
 
 
