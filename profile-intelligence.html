@@ -279,7 +279,7 @@ body.dark .piPanel{ background:#071022; }
     try{
       if(window.Android && typeof Android.getCapturedProfileText === 'function'){
         const t = (Android.getCapturedProfileText() || '').trim();
-        if(t.length > 45){
+        if(t.length > 40){
           localStorage.setItem('pi_captured', t);
           return t;
         }
@@ -402,7 +402,7 @@ body.dark .piPanel{ background:#071022; }
         if(!isOpen){
           p.classList.add('open');
           if(icon) icon.textContent = '–';
-          setTimeout(()=> p.scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
+          setTimeout(()=> p.scrollIntoView({behavior:'smooth', block:'nearest'}), 40);
         } else {
           if(icon) icon.textContent = '+';
         }
@@ -442,7 +442,7 @@ body.dark .piPanel{ background:#071022; }
     const text = getCaptured();
     debugHint.textContent = 'Captured length: ' + text.length;
 
-    if(text.length < 50){
+    if(text.length < 40){
       showIntro();
       statusEl.textContent = 'No captured text found. Open LinkedIn and scroll.';
       return;
@@ -484,7 +484,7 @@ body.dark .piPanel{ background:#071022; }
   }
 
   const cap = getCaptured();
-  if(cap.length > 50){
+  if(cap.length > 40){
     showOutput();
     statusEl.textContent = 'Captured. Tap “Get Insights”.';
   }else{
