@@ -95,15 +95,14 @@ main{
 /* =========================
    HORIZONTAL 7-BAR ACCORDION
    ========================= */
-
 .piWrap{ margin-top:18px; }
-
 .piList{
   display:flex;
   flex-direction:column;
   gap:14px;
 }
 
+/* IMPORTANT: bars are BUTTONS for reliable WebView tap handling */
 .piBar{
   position:relative;
   width:100%;
@@ -114,15 +113,19 @@ main{
   user-select:none;
   box-shadow:0 14px 28px rgba(0,0,0,.10);
   border:2px solid rgba(0,0,0,.14);
-  transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+  transition: transform .14s ease, filter .14s ease;
   overflow:hidden;
-}
 
-body.dark .piBar{
-  border-color: rgba(255,255,255,.18);
+  /* button reset */
+  appearance:none;
+  -webkit-appearance:none;
+  background:transparent;
+  font:inherit;
+  text-align:left;
 }
+.piBar:focus{ outline:none; }
+body.dark .piBar{ border-color: rgba(255,255,255,.18); }
 
-/* Premium pastel gradients (close to your reference look) */
 .piBar.c1{ background:linear-gradient(90deg,#E9DFF2,#E5E1F7); }
 .piBar.c2{ background:linear-gradient(90deg,#EFE7D7,#EFEAD9); }
 .piBar.c3{ background:linear-gradient(90deg,#A7D7D5,#9DD2D7); }
@@ -150,6 +153,7 @@ body.dark .piBar{
   color:#111827;
   background: rgba(255,255,255,.55);
   box-shadow:0 10px 18px rgba(0,0,0,.10);
+  pointer-events:auto;
 }
 
 .piTitle{
@@ -161,7 +165,7 @@ body.dark .piBar{
 
 /* Expanded panel */
 .piPanel{
-  margin-top:10px;
+  margin-top:12px;
   border-radius:22px;
   background:#0b1020;
   color:#eef2ff;
@@ -197,7 +201,6 @@ body.dark .piPanel{ background:#071022; }
   white-space:pre-wrap;
 }
 
-/* Mobile tweaks */
 @media (max-width:520px){
   header h1{ font-size:30px; }
   .piTitle{ font-size:18px; }
@@ -208,54 +211,47 @@ body.dark .piPanel{ background:#071022; }
 </head>
 
 <body>
-
 <header>
   <h1>Profile Intelligence</h1>
   <button class="toggle" id="toggleBtn" type="button">Dark</button>
 </header>
 
 <main>
+  <section class="card" id="introCard" style="display:none;">
+    <h2>Visit the client’s LinkedIn profile</h2>
+    <p style="margin:8px 0 0;color:var(--muted);font-weight:700;line-height:1.35">
+      Open the profile in LinkedIn, scroll a bit so the app can capture text.
+      Then return here and tap <b>Get Insights</b>.
+    </p>
 
-<section class="card" id="introCard" style="display:none;">
-  <h2>Visit the client’s LinkedIn profile</h2>
-  <p style="margin:8px 0 0;color:var(--muted);font-weight:700;line-height:1.35">
-    Open the profile in LinkedIn, scroll a bit so the app can capture text.
-    Then return here and tap <b>Get Insights</b>.
-  </p>
+    <div class="ctaRow">
+      <button class="cta" id="goBtn" type="button">Let’s Go!!</button>
+    </div>
+    <div class="small">App mode is required for auto capture.</div>
+  </section>
 
-  <div class="ctaRow">
-    <button class="cta" id="goBtn" type="button">Let’s Go!!</button>
-  </div>
+  <section class="card" id="outCard" style="display:none;">
+    <div class="ctaRow">
+      <button class="cta" id="insightsBtn" type="button">Get Insights</button>
+      <button class="cta btnDanger" id="resetBtn" type="button">Reset</button>
+    </div>
 
-  <div class="small">App mode is required for auto capture.</div>
-</section>
+    <div class="status" id="status">Open LinkedIn profile and scroll.</div>
 
-<section class="card" id="outCard" style="display:none;">
-  <div class="ctaRow">
-    <button class="cta" id="insightsBtn" type="button">Get Insights</button>
-    <button class="cta btnDanger" id="resetBtn" type="button">Reset</button>
-  </div>
+    <div class="piWrap">
+      <div id="piList" class="piList"></div>
+      <div id="piPanel" class="piPanel"></div>
+    </div>
 
-  <div class="status" id="status">Open LinkedIn profile and scroll.</div>
-
-  <!-- NEW horizontal bars output -->
-  <div class="piWrap">
-    <div id="piList" class="piList"></div>
-    <div id="piPanel" class="piPanel"></div>
-  </div>
-
-  <div class="small" id="debugHint"></div>
-</section>
-
+    <div class="small" id="debugHint"></div>
+  </section>
 </main>
 
 <script>
 (function(){
-  // Clear old points/error but keep captured text
-  try{
-    localStorage.removeItem('pi_points');
-    localStorage.removeItem('pi_error');
-  }catch(e){}
+  // NOTE: do NOT delete pi_points automatically — you want caching between refresh.
+  // If you want fresh every time, uncomment next two lines:
+  // try{ localStorage.removeItem('pi_points'); localStorage.removeItem('pi_error'); }catch(e){}
 
   // Theme
   const body = document.body;
@@ -263,12 +259,12 @@ body.dark .piPanel{ background:#071022; }
   function applyTheme(t){
     body.classList.toggle('dark', t==='dark');
     localStorage.setItem('theme',t);
-    toggleBtn.textContent = t==='dark'?'Light':'Dark';
+    toggleBtn.textContent = t==='dark' ? 'Light' : 'Dark';
   }
-  applyTheme(localStorage.getItem('theme')||'light');
-  toggleBtn.onclick=()=>applyTheme(body.classList.contains('dark')?'light':'dark');
+  applyTheme(localStorage.getItem('theme') || 'light');
+  toggleBtn.onclick = ()=> applyTheme(body.classList.contains('dark') ? 'light' : 'dark');
 
-  // Worker URL
+  // ✅ PLAIN URL ONLY (your current code had markdown here)
   const WORKER_URL = "https://dry-fire-c28e.davidtudu1999.workers.dev";
 
   // DOM
@@ -276,12 +272,20 @@ body.dark .piPanel{ background:#071022; }
   const outCard   = document.getElementById('outCard');
   const statusEl  = document.getElementById('status');
   const debugHint = document.getElementById('debugHint');
-
-  const listEl  = document.getElementById('piList');
-  const panelEl = document.getElementById('piPanel');
+  const listEl    = document.getElementById('piList');
+  const panelEl   = document.getElementById('piPanel');
 
   function showIntro(){ introCard.style.display=''; outCard.style.display='none'; }
   function showOutput(){ introCard.style.display='none'; outCard.style.display=''; }
+
+  function escapeHtml(str){
+    return String(str ?? '')
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
 
   // Capture helpers
   function getCaptured(){
@@ -308,7 +312,7 @@ body.dark .piPanel{ background:#071022; }
     debugHint.textContent = '';
   };
 
-  // Open LinkedIn
+  // Open LinkedIn (plain URL only)
   document.getElementById('goBtn').onclick = () => {
     try{
       if(window.Android && typeof Android.startLinkedInCapture === 'function'){
@@ -321,17 +325,6 @@ body.dark .piPanel{ background:#071022; }
     window.location.href = "https://www.linkedin.com/";
   };
 
-  // Helpers
-  function escapeHtml(str){
-    return String(str ?? '')
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-
-  // Turn worker points into {title, body} for accordion
   function normalizeToSections(arr){
     const sections = [];
     if(!Array.isArray(arr)) return sections;
@@ -339,20 +332,19 @@ body.dark .piPanel{ background:#071022; }
     arr.slice(0,7).forEach((p, i)=>{
       if(typeof p === 'string'){
         const s = p.trim();
-        // If worker returns "Heading: explanation"
         const idx = s.indexOf(':');
         if(idx > 0 && idx < 90){
           const t = s.slice(0, idx).trim();
           const b = s.slice(idx+1).trim();
           sections.push({ title: t || `Heading ${i+1}`, body: b || s });
         }else{
-          // fallback (use generic heading)
           sections.push({ title: `Heading ${i+1}`, body: s });
         }
         return;
       }
 
       if(p && typeof p === 'object'){
+        // ✅ your paste had p.name turned into a markdown link; keep it simple
         const title = (p.title || p.heading || p.name || `Heading ${i+1}`);
         const body  = (p.body || p.text || p.value || p.description || JSON.stringify(p, null, 2));
         sections.push({ title: String(title), body: String(body) });
@@ -365,14 +357,13 @@ body.dark .piPanel{ background:#071022; }
     return sections;
   }
 
-  // Render bars (only one expands)
+  // ✅ WebView-safe accordion renderer
   function renderBars(sections){
     listEl.innerHTML = '';
     panelEl.style.display = 'none';
     panelEl.innerHTML = '';
 
     if(!Array.isArray(sections) || sections.length === 0){
-      listEl.innerHTML = '';
       panelEl.style.display = '';
       panelEl.innerHTML = `<h3>No insights</h3><p class="piText">No insights returned from Worker.</p>`;
       return;
@@ -382,12 +373,12 @@ body.dark .piPanel{ background:#071022; }
     let active = -1;
 
     function setActive(idx){
-      active = idx;
+      // tap same bar => collapse
+      active = (active === idx) ? -1 : idx;
 
-      [...listEl.children].forEach((row, i)=>{
-        row.dataset.active = (i===active) ? "1" : "0";
-        const icon = row.querySelector('.piIcon');
-        if(icon) icon.textContent = (i===active) ? "–" : "+";
+      [...listEl.children].forEach((btn, i)=>{
+        const icon = btn.querySelector('.piIcon');
+        if(icon) icon.textContent = (i === active) ? "–" : "+";
       });
 
       if(active >= 0){
@@ -396,7 +387,6 @@ body.dark .piPanel{ background:#071022; }
           <h3>${escapeHtml(sections[active].title || '')}</h3>
           <p class="piText">${escapeHtml(sections[active].body || '')}</p>
         `;
-        // Keep panel visible right after list
         panelEl.scrollIntoView({behavior:'smooth', block:'nearest'});
       }else{
         panelEl.style.display = 'none';
@@ -405,21 +395,34 @@ body.dark .piPanel{ background:#071022; }
     }
 
     sections.slice(0,7).forEach((s, i)=>{
-      const bar = document.createElement('div');
-      bar.className = `piBar ${colors[i] || "c1"}`;
-      bar.innerHTML = `
-        <div class="piIcon">+</div>
-        <div class="piTitle">${escapeHtml(s.title || ('Heading ' + (i+1)))}</div>
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `piBar ${colors[i] || "c1"}`;
+      btn.innerHTML = `
+        <span class="piIcon">+</span>
+        <span class="piTitle">${escapeHtml(s.title || ('Heading ' + (i+1)))}</span>
       `;
-      bar.onclick = ()=> setActive(i);
-      listEl.appendChild(bar);
+
+      const handler = (e)=>{ e.preventDefault(); e.stopPropagation(); setActive(i); };
+
+      // click + touchstart (WebView)
+      btn.addEventListener('click', handler, {passive:false});
+      btn.addEventListener('touchstart', handler, {passive:false});
+
+      // explicit handler on +
+      const icon = btn.querySelector('.piIcon');
+      if(icon){
+        icon.addEventListener('click', handler, {passive:false});
+        icon.addEventListener('touchstart', handler, {passive:false});
+      }
+
+      listEl.appendChild(btn);
     });
 
-    // Default open first
-    setActive(0);
+    // ✅ start collapsed (only headings visible)
+    setActive(-1);
   }
 
-  // Worker call
   async function fetchInsights(text){
     const res = await fetch(WORKER_URL, {
       method:'POST',
@@ -432,17 +435,11 @@ body.dark .piPanel{ background:#071022; }
     });
 
     const raw = await res.text();
-
-    if(!res.ok){
-      throw new Error(raw.slice(0, 400));
-    }
+    if(!res.ok) throw new Error(raw.slice(0, 400));
 
     let data;
-    try{
-      data = JSON.parse(raw);
-    }catch(e){
-      throw new Error("Worker returned non-JSON: " + raw.slice(0, 300));
-    }
+    try{ data = JSON.parse(raw); }
+    catch(e){ throw new Error("Worker returned non-JSON: " + raw.slice(0, 300)); }
 
     let pts = data.points ?? data.insights ?? data.result ?? data.output ?? data.message ?? data;
 
@@ -450,23 +447,12 @@ body.dark .piPanel{ background:#071022; }
       const lines = pts.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,7);
       return lines.length ? lines : [pts];
     }
-
-    if(Array.isArray(pts) && pts.length && typeof pts[0] === 'string'){
-      return pts.slice(0,7);
-    }
-
-    if(Array.isArray(pts)){
-      return pts.slice(0,7);
-    }
-
-    if(pts && typeof pts === 'object'){
-      return [pts];
-    }
+    if(Array.isArray(pts)) return pts.slice(0,7);
+    if(pts && typeof pts === 'object') return [pts];
 
     return [];
   }
 
-  // Buttons
   document.getElementById('insightsBtn').onclick = async () => {
     const text = getCaptured();
     debugHint.textContent = 'Captured length: ' + text.length;
@@ -502,7 +488,7 @@ body.dark .piPanel{ background:#071022; }
     location.reload();
   };
 
-  // Boot
+  // Boot (restore last results if available)
   const cached = localStorage.getItem('pi_points');
   if(cached){
     try{
@@ -525,7 +511,7 @@ body.dark .piPanel{ background:#071022; }
 
 })();
 </script>
-
 </body>
 </html>
+
 
