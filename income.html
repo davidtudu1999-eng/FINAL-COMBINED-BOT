@@ -32,6 +32,20 @@
   .table th,.table td{padding:10px 8px;border-top:1px solid rgba(255,255,255,.12);text-align:center}
   .table th{opacity:.9;font-weight:900}
   .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.10);font-weight:900}
+
+  /* ✅ KEY: make chart take more space on mobile */
+  #svgWrap{
+    width:100%;
+    margin-top:6px;
+  }
+  #svgWrap svg{
+    width:100%;
+    height:46vh;           /* uses available phone space */
+    min-height:320px;      /* ensures it never looks tiny */
+    max-height:520px;      /* prevents it from becoming too huge */
+    display:block;
+  }
+
   @media print{ .actions{ display:none !important; } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -94,7 +108,7 @@
   const MULT = [1.00, 1.50, 2.25, 2.75, 3.50];
   const HIGH_MULT = 1.50;
 
-  // ✅ Fixed Y-axis cap
+  // ✅ Fixed cap (labels never change)
   const Y_MAX_LPA = 126;
 
   function roundLpa(x){ return Math.round(x); }
@@ -135,18 +149,19 @@
       sub.textContent = safeName ? `${safeName} Ji's Income Potential` : ``;
     }
 
-    // ✅ Larger chart area
-    const W = 900, H = 520;
-    const padL=80, padR=40, padT=40, padB=90;
+    /* ✅ Bigger drawing canvas INSIDE SVG
+       (CSS also forces the visible height bigger on phone) */
+    const W = 900;
+    const H = 560;
 
-    // ✅ FIXED axis range (does not change per input)
-    // ✅ Lift baseline for better visibility of 5L/10L/20L
+    const padL=78, padR=34, padT=44, padB=88;
+
+    // ✅ Fixed range (does not change per input)
     const minV = -30;
     const maxV = Y_MAX_LPA;
 
     const x = (i)=> padL + (W-padL-padR) * (i/4);
 
-    // ✅ Linear mapping (NO auto scaling)
     const y = (v)=>{
       const clamped = Math.max(minV, Math.min(maxV, v));
       return padT + (H-padT-padB) * (1 - (clamped - minV)/(maxV - minV));
@@ -169,8 +184,7 @@
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    svg.setAttribute('width','100%');
-    svg.setAttribute('height','auto');
+    svg.setAttribute('preserveAspectRatio','none'); /* ✅ allows taller chart without staying tiny */
 
     // Background
     const bg = document.createElementNS(svg.namespaceURI,'rect');
@@ -180,16 +194,16 @@
     svg.appendChild(bg);
 
     // Stars
-    for(let i=0;i<55;i++){
+    for(let i=0;i<70;i++){
       const c = document.createElementNS(svg.namespaceURI,'circle');
       c.setAttribute('cx', Math.random()*W);
       c.setAttribute('cy', Math.random()*H);
-      c.setAttribute('r', (Math.random()*1.4)+0.3);
+      c.setAttribute('r', (Math.random()*1.6)+0.3);
       c.setAttribute('fill', 'rgba(255,255,255,'+(Math.random()*0.35+0.05)+')');
       svg.appendChild(c);
     }
 
-    // ✅ Fixed ticks (never change)
+    // Fixed ticks
     const ticks = [0, 20, 40, 60, 80, 100, 126];
     ticks.forEach((v, idx)=>{
       const yy = y(v);
@@ -204,17 +218,17 @@
       svg.appendChild(gl);
 
       const tl = document.createElementNS(svg.namespaceURI,'text');
-      tl.setAttribute('x', padL-12);
-      tl.setAttribute('y', yy+5);
+      tl.setAttribute('x', padL-14);
+      tl.setAttribute('y', yy+6);
       tl.setAttribute('text-anchor','end');
       tl.setAttribute('fill','rgba(255,255,255,.70)');
-      tl.setAttribute('font-size','12');
+      tl.setAttribute('font-size','14');
       tl.setAttribute('font-weight','800');
       tl.textContent = `${v}`;
       svg.appendChild(tl);
     });
 
-    // X-axis baseline
+    // X baseline
     const baseLine = document.createElementNS(svg.namespaceURI,'line');
     baseLine.setAttribute('x1', padL);
     baseLine.setAttribute('x2', W-padR);
@@ -228,16 +242,16 @@
     for(let i=0;i<5;i++){
       const t = document.createElementNS(svg.namespaceURI,'text');
       t.setAttribute('x', x(i));
-      t.setAttribute('y', H-18);
+      t.setAttribute('y', H-28);
       t.setAttribute('text-anchor','middle');
       t.setAttribute('fill','rgba(255,255,255,.75)');
-      t.setAttribute('font-size','14');
-      t.setAttribute('font-weight','800');
+      t.setAttribute('font-size','16');
+      t.setAttribute('font-weight','900');
       t.textContent = `Year ${i+1}`;
       svg.appendChild(t);
     }
 
-    // Lines
+    // Lines (slightly thicker for bigger chart)
     const line1 = document.createElementNS(svg.namespaceURI,'polyline');
     line1.setAttribute('points', points(annual));
     line1.setAttribute('fill','none');
@@ -256,7 +270,7 @@
     line2.setAttribute('stroke-linejoin','round');
     svg.appendChild(line2);
 
-    // Stars + labels
+    // Stars + labels (bigger stars)
     function addSeries(arr, color, labelAbove){
       arr.forEach((v,i)=>{
         const cx=x(i), cy=y(v);
@@ -265,15 +279,15 @@
         star.setAttribute('d', starPath(cx, cy, 8, 16));
         star.setAttribute('fill', 'rgba(255,255,255,.92)');
         star.setAttribute('stroke', color);
-        star.setAttribute('stroke-width','2.5');
+        star.setAttribute('stroke-width','2.8');
         svg.appendChild(star);
 
         const txt = document.createElementNS(svg.namespaceURI,'text');
         txt.setAttribute('x', cx);
-        txt.setAttribute('y', cy + (labelAbove?-18:28));
+        txt.setAttribute('y', cy + (labelAbove?-22:36));
         txt.setAttribute('text-anchor','middle');
         txt.setAttribute('fill', color);
-        txt.setAttribute('font-size','16');
+        txt.setAttribute('font-size','18');
         txt.setAttribute('font-weight','900');
         txt.textContent = `₹${v}L`;
         svg.appendChild(txt);
@@ -449,3 +463,4 @@ async function __downloadCanvasViaApp(canvas, filename){
 
 </body>
 </html>
+
