@@ -47,6 +47,7 @@ header h1{margin:0;font-size:34px;}
   font-weight:800;
   cursor:pointer;
 }
+
 main{
   max-width:900px;
   margin:30px auto;
@@ -58,7 +59,13 @@ main{
   padding:26px;
   box-shadow:0 10px 30px rgba(0,0,0,.12);
 }
-.ctaRow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
+.ctaRow{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  justify-content:center;
+  margin-top:14px;
+}
 .cta{
   border:none;
   border-radius:999px;
@@ -77,110 +84,102 @@ main{
   font-weight:800;
   color:var(--muted);
 }
-.small{font-size:14px;color:var(--muted);font-weight:700;margin-top:10px;text-align:center}
-
-/* =========================
-   Premium 7-bar Accordion UI
-   ========================= */
-.piWrap{
-  margin-top:18px;
+.small{
+  font-size:14px;
+  color:var(--muted);
+  font-weight:700;
+  margin-top:10px;
+  text-align:center;
 }
 
-.piBars{
+/* =========================
+   HORIZONTAL 7-BAR ACCORDION
+   ========================= */
+
+.piWrap{ margin-top:18px; }
+
+.piList{
   display:flex;
-  gap:12px;
-  justify-content:center;
-  align-items:stretch;
-  flex-wrap:nowrap;
-  overflow-x:auto;
-  padding:10px 6px 14px;
-  -webkit-overflow-scrolling:touch;
+  flex-direction:column;
+  gap:14px;
 }
 
 .piBar{
   position:relative;
-  border:0;
+  width:100%;
+  border-radius:999px;
+  padding:16px 18px 16px 64px;
+  min-height:58px;
   cursor:pointer;
-  min-width:84px;
-  width:92px;
-  height:320px;
-  border-radius:34px;
-  color:#0b1220;
-  box-shadow:
-    0 18px 40px rgba(0,0,0,.12),
-    inset 0 0 0 1px rgba(255,255,255,.30);
-  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  user-select:none;
+  box-shadow:0 14px 28px rgba(0,0,0,.10);
+  border:2px solid rgba(0,0,0,.14);
+  transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+  overflow:hidden;
+}
+
+body.dark .piBar{
+  border-color: rgba(255,255,255,.18);
+}
+
+/* Premium pastel gradients (close to your reference look) */
+.piBar.c1{ background:linear-gradient(90deg,#E9DFF2,#E5E1F7); }
+.piBar.c2{ background:linear-gradient(90deg,#EFE7D7,#EFEAD9); }
+.piBar.c3{ background:linear-gradient(90deg,#A7D7D5,#9DD2D7); }
+.piBar.c4{ background:linear-gradient(90deg,#DAD4E9,#D6D2F2); }
+.piBar.c5{ background:linear-gradient(90deg,#EFE7D7,#EFEAD9); }
+.piBar.c6{ background:linear-gradient(90deg,#A7D7D5,#9DD2D7); }
+.piBar.c7{ background:linear-gradient(90deg,#C9B5C9,#CBB9D0); }
+
+.piBar:hover{ filter: brightness(1.02); }
+.piBar:active{ transform: scale(.995); }
+
+.piIcon{
+  position:absolute;
+  left:18px;
+  top:50%;
+  transform:translateY(-50%);
+  width:34px;
+  height:34px;
+  border-radius:12px;
   display:flex;
   align-items:center;
   justify-content:center;
-  outline:none;
-  user-select:none;
-}
-.piBar:active{ transform: scale(.99); }
-.piBar:hover{ filter: brightness(1.02); }
-
-.piPlus{
-  position:absolute;
-  top:14px; left:14px;
-  width:34px; height:34px;
-  border-radius:999px;
-  display:grid;
-  place-items:center;
   font-weight:950;
-  font-size:20px;
+  font-size:22px;
+  color:#111827;
   background: rgba(255,255,255,.55);
-  box-shadow: 0 10px 18px rgba(0,0,0,.10);
+  box-shadow:0 10px 18px rgba(0,0,0,.10);
 }
 
 .piTitle{
   font-weight:950;
-  font-size:18px;
+  font-size:20px;
   letter-spacing:.2px;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  opacity:.95;
-  text-align:center;
-  padding:18px 0;
+  color:#111827;
 }
 
-.piBar.active{
-  transform: translateY(-4px);
-  box-shadow:
-    0 24px 54px rgba(0,0,0,.18),
-    inset 0 0 0 1px rgba(255,255,255,.40);
-}
-.piBar.active .piPlus{ background: rgba(255,255,255,.82); }
-
-/* 7 premium colors */
-.c1{ background: linear-gradient(180deg,#E8E7FF,#D6D2FF); } /* lavender */
-.c2{ background: linear-gradient(180deg,#E8FFF6,#BFF3DE); } /* mint */
-.c3{ background: linear-gradient(180deg,#FFF3E6,#FFD3A8); } /* sand */
-.c4{ background: linear-gradient(180deg,#E7F1FF,#BFD9FF); } /* sky */
-.c5{ background: linear-gradient(180deg,#FFF0F6,#FFC6D9); } /* rose */
-.c6{ background: linear-gradient(180deg,#F1FFF0,#D5F8C8); } /* sage */
-.c7{ background: linear-gradient(180deg,#F6F7FB,#DDE2F3); } /* slate */
-
-/* Expanded panel (below) */
+/* Expanded panel */
 .piPanel{
-  background: #0b1020;
-  color:#eef2ff;
+  margin-top:10px;
   border-radius:22px;
-  padding:16px 16px;
-  box-shadow:0 18px 40px rgba(0,0,0,.18);
-  margin: 6px 6px 8px;
-  position:relative;
+  background:#0b1020;
+  color:#eef2ff;
+  padding:18px 18px;
+  box-shadow:0 18px 38px rgba(0,0,0,.18);
+  display:none;
   overflow:hidden;
+  position:relative;
 }
-body.dark .piPanel{
-  background:#071022;
-}
+body.dark .piPanel{ background:#071022; }
+
 .piPanel:before{
   content:"";
   position:absolute; inset:-30px;
   background:
-    radial-gradient(280px 220px at 20% 20%, rgba(34,199,244,.22), rgba(0,0,0,0) 60%),
-    radial-gradient(320px 260px at 85% 10%, rgba(246,178,26,.18), rgba(0,0,0,0) 60%),
-    radial-gradient(360px 280px at 55% 95%, rgba(37,211,102,.14), rgba(0,0,0,0) 60%);
+    radial-gradient(300px 220px at 18% 25%, rgba(34,199,244,.20), rgba(0,0,0,0) 60%),
+    radial-gradient(300px 220px at 82% 18%, rgba(246,178,26,.16), rgba(0,0,0,0) 60%),
+    radial-gradient(340px 260px at 50% 92%, rgba(37,211,102,.14), rgba(0,0,0,0) 60%);
   pointer-events:none;
 }
 .piPanel > *{ position:relative; }
@@ -189,32 +188,21 @@ body.dark .piPanel{
   margin:0 0 10px;
   font-size:18px;
   font-weight:950;
-  letter-spacing:.2px;
 }
 .piText{
+  margin:0;
   font-size:15.5px;
   line-height:1.45;
-  opacity:.95;
+  opacity:.96;
   white-space:pre-wrap;
 }
 
-/* Mobile: show bars as horizontal pills (still same behavior) */
-@media (max-width: 520px){
-  .piBar{
-    height:56px;
-    width:auto;
-    min-width:240px;
-    border-radius:999px;
-    justify-content:flex-start;
-    padding-left:62px;
-  }
-  .piTitle{
-    writing-mode:initial;
-    transform:none;
-    padding:0;
-    text-align:left;
-    font-size:16px;
-  }
+/* Mobile tweaks */
+@media (max-width:520px){
+  header h1{ font-size:30px; }
+  .piTitle{ font-size:18px; }
+  .piBar{ padding:14px 16px 14px 58px; min-height:54px; }
+  .piIcon{ left:14px; width:32px; height:32px; }
 }
 </style>
 </head>
@@ -250,10 +238,10 @@ body.dark .piPanel{
 
   <div class="status" id="status">Open LinkedIn profile and scroll.</div>
 
-  <!-- NEW OUTPUT UI -->
+  <!-- NEW horizontal bars output -->
   <div class="piWrap">
-    <div id="piBars" class="piBars"></div>
-    <div id="piPanel" class="piPanel" style="display:none;"></div>
+    <div id="piList" class="piList"></div>
+    <div id="piPanel" class="piPanel"></div>
   </div>
 
   <div class="small" id="debugHint"></div>
@@ -263,13 +251,13 @@ body.dark .piPanel{
 
 <script>
 (function(){
-  // ---------- HARD RESET OF OLD STATE (prevents “stuck error”) ----------
+  // Clear old points/error but keep captured text
   try{
     localStorage.removeItem('pi_points');
     localStorage.removeItem('pi_error');
   }catch(e){}
 
-  // ---------- Theme ----------
+  // Theme
   const body = document.body;
   const toggleBtn = document.getElementById('toggleBtn');
   function applyTheme(t){
@@ -280,19 +268,22 @@ body.dark .piPanel{
   applyTheme(localStorage.getItem('theme')||'light');
   toggleBtn.onclick=()=>applyTheme(body.classList.contains('dark')?'light':'dark');
 
-  // ---------- Worker URL ----------
+  // Worker URL
   const WORKER_URL = "https://dry-fire-c28e.davidtudu1999.workers.dev";
 
-  // ---------- DOM ----------
+  // DOM
   const introCard = document.getElementById('introCard');
   const outCard   = document.getElementById('outCard');
   const statusEl  = document.getElementById('status');
   const debugHint = document.getElementById('debugHint');
 
+  const listEl  = document.getElementById('piList');
+  const panelEl = document.getElementById('piPanel');
+
   function showIntro(){ introCard.style.display=''; outCard.style.display='none'; }
   function showOutput(){ introCard.style.display='none'; outCard.style.display=''; }
 
-  // ---------- Capture helpers ----------
+  // Capture helpers
   function getCaptured(){
     try{
       if(window.Android && typeof Android.getCapturedProfileText === 'function'){
@@ -306,7 +297,7 @@ body.dark .piPanel{
     return (localStorage.getItem('pi_captured') || '').trim();
   }
 
-  // Android can directly inject captured text
+  // Android can inject captured text directly
   window.PI_setCapturedText = function(text){
     try{
       const t = (text == null) ? '' : String(text);
@@ -317,7 +308,7 @@ body.dark .piPanel{
     debugHint.textContent = '';
   };
 
-  // ---------- Open LinkedIn ----------
+  // Open LinkedIn
   document.getElementById('goBtn').onclick = () => {
     try{
       if(window.Android && typeof Android.startLinkedInCapture === 'function'){
@@ -330,7 +321,7 @@ body.dark .piPanel{
     window.location.href = "https://www.linkedin.com/";
   };
 
-  // ---------- Premium 7-bar renderer ----------
+  // Helpers
   function escapeHtml(str){
     return String(str ?? '')
       .replaceAll("&","&amp;")
@@ -340,26 +331,27 @@ body.dark .piPanel{
       .replaceAll("'","&#039;");
   }
 
+  // Turn worker points into {title, body} for accordion
   function normalizeToSections(arr){
     const sections = [];
     if(!Array.isArray(arr)) return sections;
 
     arr.slice(0,7).forEach((p, i)=>{
-      // string point: try split "Heading: body"
       if(typeof p === 'string'){
         const s = p.trim();
+        // If worker returns "Heading: explanation"
         const idx = s.indexOf(':');
-        if(idx > 0 && idx < 80){
+        if(idx > 0 && idx < 90){
           const t = s.slice(0, idx).trim();
           const b = s.slice(idx+1).trim();
           sections.push({ title: t || `Heading ${i+1}`, body: b || s });
         }else{
+          // fallback (use generic heading)
           sections.push({ title: `Heading ${i+1}`, body: s });
         }
         return;
       }
 
-      // object point
       if(p && typeof p === 'object'){
         const title = (p.title || p.heading || p.name || `Heading ${i+1}`);
         const body  = (p.body || p.text || p.value || p.description || JSON.stringify(p, null, 2));
@@ -367,49 +359,45 @@ body.dark .piPanel{
         return;
       }
 
-      // fallback
       sections.push({ title: `Heading ${i+1}`, body: String(p) });
     });
 
     return sections;
   }
 
+  // Render bars (only one expands)
   function renderBars(sections){
-    const barsEl = document.getElementById('piBars');
-    const panelEl = document.getElementById('piPanel');
-    if(!barsEl || !panelEl) return;
-
-    barsEl.innerHTML = '';
+    listEl.innerHTML = '';
     panelEl.style.display = 'none';
     panelEl.innerHTML = '';
 
     if(!Array.isArray(sections) || sections.length === 0){
+      listEl.innerHTML = '';
       panelEl.style.display = '';
-      panelEl.innerHTML = `<h3>No insights</h3><div class="piText">No insights returned from Worker.</div>`;
+      panelEl.innerHTML = `<h3>No insights</h3><p class="piText">No insights returned from Worker.</p>`;
       return;
     }
 
-    const colorClasses = ["c1","c2","c3","c4","c5","c6","c7"];
+    const colors = ["c1","c2","c3","c4","c5","c6","c7"];
     let active = -1;
 
     function setActive(idx){
       active = idx;
 
-      [...barsEl.children].forEach((btn, i)=>{
-        btn.classList.toggle('active', i===active);
-        const plus = btn.querySelector('.piPlus');
-        if(plus) plus.textContent = (i===active) ? "–" : "+";
-        btn.setAttribute('aria-expanded', (i===active) ? 'true' : 'false');
+      [...listEl.children].forEach((row, i)=>{
+        row.dataset.active = (i===active) ? "1" : "0";
+        const icon = row.querySelector('.piIcon');
+        if(icon) icon.textContent = (i===active) ? "–" : "+";
       });
 
       if(active >= 0){
         panelEl.style.display = '';
         panelEl.innerHTML = `
           <h3>${escapeHtml(sections[active].title || '')}</h3>
-          <div class="piText">${escapeHtml(sections[active].body || '')}</div>
+          <p class="piText">${escapeHtml(sections[active].body || '')}</p>
         `;
-        // scroll panel into view nicely (mobile friendly)
-        panelEl.scrollIntoView({behavior:'smooth', block:'start'});
+        // Keep panel visible right after list
+        panelEl.scrollIntoView({behavior:'smooth', block:'nearest'});
       }else{
         panelEl.style.display = 'none';
         panelEl.innerHTML = '';
@@ -417,23 +405,21 @@ body.dark .piPanel{
     }
 
     sections.slice(0,7).forEach((s, i)=>{
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = `piBar ${colorClasses[i] || 'c1'}`;
-      btn.setAttribute('aria-expanded','false');
-      btn.innerHTML = `
-        <div class="piPlus">+</div>
+      const bar = document.createElement('div');
+      bar.className = `piBar ${colors[i] || "c1"}`;
+      bar.innerHTML = `
+        <div class="piIcon">+</div>
         <div class="piTitle">${escapeHtml(s.title || ('Heading ' + (i+1)))}</div>
       `;
-      btn.onclick = ()=> setActive(i); // only one open at a time
-      barsEl.appendChild(btn);
+      bar.onclick = ()=> setActive(i);
+      listEl.appendChild(bar);
     });
 
-    // Default: open the first section
+    // Default open first
     setActive(0);
   }
 
-  // ---------- Worker call ----------
+  // Worker call
   async function fetchInsights(text){
     const res = await fetch(WORKER_URL, {
       method:'POST',
@@ -480,7 +466,7 @@ body.dark .piPanel{
     return [];
   }
 
-  // ---------- Buttons ----------
+  // Buttons
   document.getElementById('insightsBtn').onclick = async () => {
     const text = getCaptured();
     debugHint.textContent = 'Captured length: ' + text.length;
@@ -498,6 +484,7 @@ body.dark .piPanel{
       const pts = await fetchInsights(text);
       localStorage.setItem('pi_points', JSON.stringify(pts));
       statusEl.textContent = 'Ready';
+
       const sections = normalizeToSections(pts);
       renderBars(sections);
     }catch(e){
@@ -515,7 +502,7 @@ body.dark .piPanel{
     location.reload();
   };
 
-  // ---------- Boot ----------
+  // Boot
   const cached = localStorage.getItem('pi_points');
   if(cached){
     try{
@@ -541,3 +528,4 @@ body.dark .piPanel{
 
 </body>
 </html>
+
