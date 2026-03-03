@@ -92,9 +92,7 @@ main{
   text-align:center;
 }
 
-/* =========================
-   HORIZONTAL 7-BAR ACCORDION
-   ========================= */
+/* ===== Horizontal bar accordion ===== */
 .piWrap{ margin-top:18px; }
 .piList{
   display:flex;
@@ -102,18 +100,16 @@ main{
   gap:14px;
 }
 
-/* IMPORTANT: bars are BUTTONS for reliable WebView tap handling */
+/* Use BUTTON for better accessibility + tap handling */
 .piBar{
   position:relative;
   width:100%;
   border-radius:999px;
   padding:16px 18px 16px 64px;
   min-height:58px;
-  cursor:pointer;
   user-select:none;
   box-shadow:0 14px 28px rgba(0,0,0,.10);
   border:2px solid rgba(0,0,0,.14);
-  transition: transform .14s ease, filter .14s ease;
   overflow:hidden;
 
   /* button reset */
@@ -122,6 +118,10 @@ main{
   background:transparent;
   font:inherit;
   text-align:left;
+
+  /* ✅ MIUI/WebView tap fixes */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .piBar:focus{ outline:none; }
 body.dark .piBar{ border-color: rgba(255,255,255,.18); }
@@ -134,7 +134,6 @@ body.dark .piBar{ border-color: rgba(255,255,255,.18); }
 .piBar.c6{ background:linear-gradient(90deg,#A7D7D5,#9DD2D7); }
 .piBar.c7{ background:linear-gradient(90deg,#C9B5C9,#CBB9D0); }
 
-.piBar:hover{ filter: brightness(1.02); }
 .piBar:active{ transform: scale(.995); }
 
 .piIcon{
@@ -153,7 +152,7 @@ body.dark .piBar{ border-color: rgba(255,255,255,.18); }
   color:#111827;
   background: rgba(255,255,255,.55);
   box-shadow:0 10px 18px rgba(0,0,0,.10);
-  pointer-events:auto;
+  pointer-events:none; /* ✅ let the whole bar handle tap */
 }
 
 .piTitle{
@@ -176,7 +175,6 @@ body.dark .piBar{ border-color: rgba(255,255,255,.18); }
   position:relative;
 }
 body.dark .piPanel{ background:#071022; }
-
 .piPanel:before{
   content:"";
   position:absolute; inset:-30px;
@@ -187,7 +185,6 @@ body.dark .piPanel{ background:#071022; }
   pointer-events:none;
 }
 .piPanel > *{ position:relative; }
-
 .piPanel h3{
   margin:0 0 10px;
   font-size:18px;
@@ -249,10 +246,6 @@ body.dark .piPanel{ background:#071022; }
 
 <script>
 (function(){
-  // NOTE: do NOT delete pi_points automatically — you want caching between refresh.
-  // If you want fresh every time, uncomment next two lines:
-  // try{ localStorage.removeItem('pi_points'); localStorage.removeItem('pi_error'); }catch(e){}
-
   // Theme
   const body = document.body;
   const toggleBtn = document.getElementById('toggleBtn');
@@ -264,7 +257,7 @@ body.dark .piPanel{ background:#071022; }
   applyTheme(localStorage.getItem('theme') || 'light');
   toggleBtn.onclick = ()=> applyTheme(body.classList.contains('dark') ? 'light' : 'dark');
 
-  // ✅ PLAIN URL ONLY (your current code had markdown here)
+  // ✅ Plain Worker URL
   const WORKER_URL = "https://dry-fire-c28e.davidtudu1999.workers.dev";
 
   // DOM
@@ -312,7 +305,7 @@ body.dark .piPanel{ background:#071022; }
     debugHint.textContent = '';
   };
 
-  // Open LinkedIn (plain URL only)
+  // Open LinkedIn
   document.getElementById('goBtn').onclick = () => {
     try{
       if(window.Android && typeof Android.startLinkedInCapture === 'function'){
@@ -334,9 +327,7 @@ body.dark .piPanel{ background:#071022; }
         const s = p.trim();
         const idx = s.indexOf(':');
         if(idx > 0 && idx < 90){
-          const t = s.slice(0, idx).trim();
-          const b = s.slice(idx+1).trim();
-          sections.push({ title: t || `Heading ${i+1}`, body: b || s });
+          sections.push({ title: s.slice(0, idx).trim() || `Heading ${i+1}`, body: s.slice(idx+1).trim() || s });
         }else{
           sections.push({ title: `Heading ${i+1}`, body: s });
         }
@@ -344,7 +335,6 @@ body.dark .piPanel{ background:#071022; }
       }
 
       if(p && typeof p === 'object'){
-        // ✅ your paste had p.name turned into a markdown link; keep it simple
         const title = (p.title || p.heading || p.name || `Heading ${i+1}`);
         const body  = (p.body || p.text || p.value || p.description || JSON.stringify(p, null, 2));
         sections.push({ title: String(title), body: String(body) });
@@ -357,7 +347,59 @@ body.dark .piPanel{ background:#071022; }
     return sections;
   }
 
-  // ✅ WebView-safe accordion renderer
+  // ===== Accordion (MIUI-safe) =====
+  let __sections = [];
+  let __active = -1;
+
+  function updateUI(){
+    const children = Array.from(listEl.children);
+    children.forEach((btn, i)=>{
+      const icon = btn.querySelector('.piIcon');
+      if(icon) icon.textContent = (i === __active) ? "–" : "+";
+    });
+
+    if(__active >= 0){
+      panelEl.style.display = '';
+      panelEl.innerHTML = `
+        <h3>${escapeHtml(__sections[__active].title || '')}</h3>
+        <p class="piText">${escapeHtml(__sections[__active].body || '')}</p>
+      `;
+      // statusEl.textContent = `Opened: ${__active+1}`; // optional
+      panelEl.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }else{
+      panelEl.style.display = 'none';
+      panelEl.innerHTML = '';
+    }
+  }
+
+  function setActive(idx){
+    __active = (__active === idx) ? -1 : idx;
+    updateUI();
+  }
+
+  // ✅ Event delegation = most reliable on MIUI WebView
+  function attachDelegatedHandlers(){
+    const handler = (ev)=>{
+      const t = ev.target;
+      const bar = t && t.closest ? t.closest('.piBar') : null;
+      if(!bar) return;
+
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      const idx = Number(bar.getAttribute('data-idx'));
+      if(Number.isNaN(idx)) return;
+
+      // show tap detected (so we know WebView is firing events)
+      statusEl.textContent = `Tapped: ${idx+1}`;
+      setActive(idx);
+    };
+
+    listEl.addEventListener('pointerup', handler, {passive:false});
+    listEl.addEventListener('touchend', handler, {passive:false});
+    listEl.addEventListener('click', handler, {passive:false});
+  }
+
   function renderBars(sections){
     listEl.innerHTML = '';
     panelEl.style.display = 'none';
@@ -369,59 +411,27 @@ body.dark .piPanel{ background:#071022; }
       return;
     }
 
+    __sections = sections.slice(0,7);
+    __active = -1;
+
     const colors = ["c1","c2","c3","c4","c5","c6","c7"];
-    let active = -1;
 
-    function setActive(idx){
-      // tap same bar => collapse
-      active = (active === idx) ? -1 : idx;
-
-      [...listEl.children].forEach((btn, i)=>{
-        const icon = btn.querySelector('.piIcon');
-        if(icon) icon.textContent = (i === active) ? "–" : "+";
-      });
-
-      if(active >= 0){
-        panelEl.style.display = '';
-        panelEl.innerHTML = `
-          <h3>${escapeHtml(sections[active].title || '')}</h3>
-          <p class="piText">${escapeHtml(sections[active].body || '')}</p>
-        `;
-        panelEl.scrollIntoView({behavior:'smooth', block:'nearest'});
-      }else{
-        panelEl.style.display = 'none';
-        panelEl.innerHTML = '';
-      }
-    }
-
-    sections.slice(0,7).forEach((s, i)=>{
+    __sections.forEach((s, i)=>{
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `piBar ${colors[i] || "c1"}`;
+      btn.setAttribute('data-idx', String(i));
       btn.innerHTML = `
         <span class="piIcon">+</span>
         <span class="piTitle">${escapeHtml(s.title || ('Heading ' + (i+1)))}</span>
       `;
-
-      const handler = (e)=>{ e.preventDefault(); e.stopPropagation(); setActive(i); };
-
-      // click + touchstart (WebView)
-      btn.addEventListener('click', handler, {passive:false});
-      btn.addEventListener('touchstart', handler, {passive:false});
-
-      // explicit handler on +
-      const icon = btn.querySelector('.piIcon');
-      if(icon){
-        icon.addEventListener('click', handler, {passive:false});
-        icon.addEventListener('touchstart', handler, {passive:false});
-      }
-
       listEl.appendChild(btn);
     });
 
-    // ✅ start collapsed (only headings visible)
-    setActive(-1);
+    updateUI(); // start collapsed
   }
+
+  attachDelegatedHandlers();
 
   async function fetchInsights(text){
     const res = await fetch(WORKER_URL, {
@@ -513,5 +523,6 @@ body.dark .piPanel{ background:#071022; }
 </script>
 </body>
 </html>
+
 
 
